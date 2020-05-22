@@ -1,4 +1,6 @@
-# ansq - AsynchronousIO NSQ
+# ansq - Async NSQ
+Written with native Asyncio NSQ package
+
 ## How to
 
 ## Examples

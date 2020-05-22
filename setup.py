@@ -9,7 +9,7 @@ install_requires = [
 
 classifiers = [
     'License :: OSI Approved :: MIT License',
-    'Development Status :: 4 - Beta',
+    'Development Status :: 3 - Alpha',
     'Programming Language :: Python',
     'Programming Language :: Python :: 3',
     'Programming Language :: Python :: 3.5',
@@ -29,13 +29,13 @@ with open('README.md', 'r') as f:
 setup(
     name='ansq',
     version=__version__.__version__,
-    description='Enhanced, written with native Asynchronous I/O NSQ package',
+    description='Written with native Asyncio NSQ package',
     long_description=long_description,
     long_description_content_type='text/markdown',
     classifiers=classifiers,
-    author='Alexander "GinTR1k" Karateev',
-    author_email='administrator@gintr1k.space',
-    url='https://github.com/GinTR1k/ansq',
+    author='LiST',
+    author_email='support@list.family',
+    url='https://github.com/list-family/ansq',
     license='MIT',
     packages=find_packages(exclude=['tests']),
     install_requires=install_requires,
