@@ -61,10 +61,13 @@ class TCPConnection(abc.ABC):
         self._is_upgrading = False
         # Number of received but not acked or req messages
         self._in_flight = 0
+        self._secret: Optional[str] = None
+        self._is_auth_required = False
+        self._is_authorized = False
 
         # Handlers
         self._on_message = on_message
-        self._on_exception_handler = on_exception
+        self._on_exception = on_exception
 
         # Reader setup
         self._topic: Optional[str] = None
@@ -108,6 +111,14 @@ class TCPConnection(abc.ABC):
     @property
     def subscribed_channel(self) -> Optional[str]:
         return self._channel
+
+    @property
+    def is_auth_required(self) -> bool:
+        return self._is_auth_required
+
+    @property
+    def is_authorized(self) -> bool:
+        return self._is_authorized
 
     @property
     def is_closed(self) -> bool:
@@ -163,7 +174,7 @@ class TCPConnection(abc.ABC):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    async def _read_data(self):
+    async def _read_data_task(self):
         raise NotImplementedError()
 
     @abc.abstractmethod
