@@ -5,7 +5,7 @@ import json
 from time import time
 from typing import Optional, Callable, Any, Union, Generator
 
-from ansq.tcp.exceptions import ProtocolError, get_exception
+from ansq.tcp.exceptions import ProtocolError, get_exception, NSQUnauthorized
 from ansq.tcp.types import (
     TCPConnection as NSQConnectionBase, ConnectionStatus, NSQMessage,
     NSQResponseSchema, NSQMessageSchema, NSQErrorSchema, NSQCommands
@@ -22,7 +22,7 @@ class NSQConnection(NSQConnectionBase):
         self._status = ConnectionStatus.CONNECTED
         self.logger.info('Connect to {} established'.format(self.endpoint))
 
-        self._reader_task = self._loop.create_task(self._read_data())
+        self._reader_task = self._loop.create_task(self._read_data_task())
 
         return True
 
@@ -32,24 +32,20 @@ class NSQConnection(NSQConnectionBase):
         self._status = ConnectionStatus.RECONNECTING
 
         await self._do_close(change_status=False)
-        await asyncio.sleep(1)
+        try:
+            await self.connect()
+            await self.identify()
+            self._secret and await self.auth(self._secret)
+            self._is_subscribed and await self.subscribe(
+                self._topic, self._channel, self.rdy_messages_count)
 
-        retry_count = 1
-        last_exception: Optional[Exception] = None
-        while retry_count < 10:
-            try:
-                if await self.connect() and await self.identify():
-                    self.logger.info('Reconnected to {} in {} attempts'.format(
-                        self.endpoint, retry_count))
-                    return True
-            except Exception as e:
-                last_exception = e
-                self.logger.exception(e)
+        except Exception as e:
+            await self._do_close(e)
+            return False
 
-            retry_count += 1
-            await asyncio.sleep(3)
-
-        raise last_exception
+        self.logger.info('Reconnected to {}'.format(self.endpoint))
+        self._status = ConnectionStatus.CONNECTED
+        return True
 
     async def _do_close(
             self, exception: Exception = None, change_status: bool = True):
@@ -68,14 +64,15 @@ class NSQConnection(NSQConnectionBase):
                 self.endpoint))
 
         if self.is_subscribed:
-            self._is_subscribed = False
             try:
                 await self._cls()
             finally:
                 pass
 
-        for _ in range(self._message_queue.qsize()):
-            self._message_queue.get_nowait()
+            if change_status:
+                self._is_subscribed = False
+                while self._message_queue.qsize() > 0:
+                    self._message_queue.get_nowait()
 
         if self._reader_task and not self._reader_task.done():
             self._reader_task.cancel()
@@ -84,7 +81,11 @@ class NSQConnection(NSQConnectionBase):
             except Exception as e:
                 self.logger.exception(e)
 
-        if self._reconnect_task and not self._reconnect_task.done():
+        if (
+                change_status
+                and self._reconnect_task
+                and not self._reconnect_task.done()
+        ):
             self._reconnect_task.cancel()
             try:
                 await self._reconnect_task
@@ -113,17 +114,24 @@ class NSQConnection(NSQConnectionBase):
 
         :returns: The response from NSQ.
         """
+        if command is None:
+            raise ValueError('Command must not be None')
+        if None in set(args):
+            raise ValueError('Args must not contain None')
+
+        if (
+                self.is_auth_required
+                and not self.is_authorized
+                and command != NSQCommands.AUTH
+        ):
+            raise NSQUnauthorized('NSQ server requires client authorization')
+
+        if self.status.is_reconnecting and not self._reconnect_task:
+            await self._reconnect_task
+
         assert self._reader, 'You should call `connect` method first'
         assert self._status or command == NSQCommands.CLS, (
-            'Connection closed')
-
-        if command is None:
-            raise TypeError('Command must not be None')
-        if None in set(args):
-            raise TypeError('Args must not contain None')
-
-        if self.status.is_reconnecting and not self._reconnect_task.done():
-            await self._reconnect_task
+            'Connection is closed')
 
         future = self._loop.create_future()
         if command in (
@@ -166,6 +174,8 @@ class NSQConnection(NSQConnectionBase):
         response_config = json.loads(response.body)
         fut = None
 
+        if response_config.get('auth_required'):
+            self._is_auth_required = True
         if response_config.get('tls_v1'):
             await self._upgrade_to_tls()
         if response_config.get('snappy'):
@@ -189,26 +199,25 @@ class NSQConnection(NSQConnectionBase):
     def _upgrade_to_deflate(self):
         raise NotImplementedError('Upgrade to deflate not implemented yet')
 
-    async def _read_data(self):
+    async def _read_data_task(self):
         """Response reader task."""
         while not self._reader.at_eof():
             try:
                 data = await self._reader.read(52)
-
-                self._parser.feed(data)
-                not self._is_upgrading and await self._read_buffer()
             except asyncio.CancelledError:
                 # useful during update to TLS, task canceled but connection
                 # should not be closed
                 return
             except Exception as exc:
-                self.logger.exception(exc)
-                break
+                await self._do_close(exc)
+                return
 
-        if self.is_closed:
-            return
+            self._parser.feed(data)
+            not self._is_upgrading and await self._read_buffer()
 
+        self.logger.info('Lost connection to NSQ')
         if self._auto_reconnect:
+            await asyncio.sleep(1)
             self._reconnect_task = self._loop.create_task(self.reconnect())
         else:
             await self._do_close(RuntimeError('Lost connection to NSQ'))
@@ -248,18 +257,11 @@ class NSQConnection(NSQConnectionBase):
 
         if response.is_error:
             exception = get_exception(response.code, response.body)
-            self.logger.error(exception)
 
             if not future.cancelled():
-                future.set_result(exception)
-            callback and callback(exception)
-
-            do_reconnect = self._auto_reconnect
-            if self._on_exception_handler:
-                do_reconnect = self._on_exception_handler(exception)
-
-            if exception.fatal and do_reconnect:
-                self._reconnect_task = self._loop.create_task(self.reconnect())
+                future.set_result(response)
+            callback and callback(response)
+            self._on_exception and self._on_exception(exception)
 
         return True
 
@@ -286,7 +288,9 @@ class NSQConnection(NSQConnectionBase):
         await self._read_buffer()
         self._is_upgrading = False
 
-    async def auth(self, secret) -> Union[NSQResponseSchema, NSQErrorSchema]:
+    async def auth(self, secret: str) -> Union[
+        NSQResponseSchema, NSQErrorSchema
+    ]:
         """If the ``IDENTIFY`` response indicates ``auth_required=true``
         the client must send ``AUTH`` before any ``SUB``, ``PUB`` or ``MPUB``
         commands. If auth_required is not present (or ``false``),
@@ -295,7 +299,10 @@ class NSQConnection(NSQConnectionBase):
         :param secret:
         :return:
         """
-        return await self.execute(NSQCommands.AUTH, data=secret)
+        response = await self.execute(NSQCommands.AUTH, data=secret)
+        if not isinstance(response, NSQErrorSchema):
+            self._secret = secret
+        return response
 
     async def sub(self, topic, channel) -> Union[
         NSQResponseSchema, NSQErrorSchema

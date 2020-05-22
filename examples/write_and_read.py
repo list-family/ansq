@@ -1,10 +1,3 @@
-# ansq - AsynchronousIO NSQ
-## How to
-
-## Examples
-
-Write and read messages:
-```python
 import asyncio
 from ansq import open_connection
 
@@ -49,24 +42,3 @@ async def main():
 if __name__ == '__main__':
     loop = asyncio.get_event_loop()
     loop.run_until_complete(main())
-
-```
-
-Output:
-```
-<NSQResponseSchema frame_type:FrameType.RESPONSE, body:b'OK', is_ok:True>
-<NSQResponseSchema frame_type:FrameType.RESPONSE, body:b'OK', is_ok:True>
-<NSQResponseSchema frame_type:FrameType.RESPONSE, body:b'OK', is_ok:True>
-Message #0: test_message
-Message #1: message
-Message #2: test_message1, timestamp=1590082994.094573
-Message #3: test_message1, timestamp=1590082994.101988
-Message #4: test_message
-Message #5: message
-Message #6: test_message
-Message #7: test_message
-Message #8: t
-Message #9: test_message1, timestamp=1590086643.648776
-e
-<NSQMessage id="0d406ce4661af003", body="e", attempts=1, timestamp=1590162134305413767, timeout=60000, initialized_at=1590162194.8242455, is_timed_out=False, is_processed=False>
-```
