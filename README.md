@@ -1,4 +1,6 @@
 # ansq - Async NSQ
+[![PyPI version](https://badge.fury.io/py/ansq.svg)](https://badge.fury.io/py/ansq)
+
 Written with native Asyncio NSQ package
 
 ## How to
