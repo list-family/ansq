@@ -26,8 +26,21 @@ class NSQConnection(NSQConnectionBase):
 
         return True
 
-    async def reconnect(self) -> bool:
-        """Reopen connection"""
+    async def reconnect(self, raise_error: bool = True) -> bool:
+        """Reconnect method will reopen the connection,
+        send the ``identify`` command with your or default config,
+        authorize you if you were authorized
+        and resubscribe to previous topic/channel.
+
+        So, after that command you can continue to work
+        with NSQ like nothing is happened.
+
+        :param raise_error: If ``False``, method will log exception
+            and return the ``bool`` value anyway.
+        :type raise_error: :class:`bool`
+
+        :returns: Reconnect successful status.
+        """
         self.logger.debug('Reconnecting to {}...'.format(self.endpoint))
         self._status = ConnectionStatus.RECONNECTING
 
@@ -38,8 +51,10 @@ class NSQConnection(NSQConnectionBase):
             self._secret and await self.auth(self._secret)
             self._is_subscribed and await self.subscribe(
                 self._topic, self._channel, self.rdy_messages_count)
-
         except Exception as e:
+            if raise_error:
+                raise e
+
             await self._do_close(e)
             return False
 
@@ -63,16 +78,11 @@ class NSQConnection(NSQConnectionBase):
             self.logger.debug('Connection {} is closing...'.format(
                 self.endpoint))
 
-        if self.is_subscribed:
-            try:
-                await self._cls()
-            finally:
-                pass
-
-            if change_status:
-                self._is_subscribed = False
-                while self._message_queue.qsize() > 0:
-                    self._message_queue.get_nowait()
+        if self.is_subscribed and change_status:
+            self._is_subscribed = False
+            while self._message_queue.qsize() > 0:
+                self._message_queue.get_nowait()
+            self._message_queue.put_nowait(None)
 
         if self._reader_task and not self._reader_task.done():
             self._reader_task.cancel()
@@ -98,10 +108,12 @@ class NSQConnection(NSQConnectionBase):
         finally:
             pass
 
+        if self._message_queue.qsize() > 0:
+            self._message_queue.get_nowait()
+
         if change_status:
             self._status = ConnectionStatus.CLOSED
-
-        self.logger.info('Connection {} is closed'.format(self.endpoint))
+            self.logger.info('Connection {} is closed'.format(self.endpoint))
 
     async def execute(
             self, command: Union[str, bytes], *args, data: Any = None,
@@ -218,17 +230,18 @@ class NSQConnection(NSQConnectionBase):
         self.logger.info('Lost connection to NSQ')
         if self._auto_reconnect:
             await asyncio.sleep(1)
-            self._reconnect_task = self._loop.create_task(self.reconnect())
+            self._reconnect_task = self._loop.create_task(
+                self.reconnect(raise_error=False)
+            )
         else:
-            await self._do_close(RuntimeError('Lost connection to NSQ'))
+            await self._do_close(OSError('Lost connection to NSQ'))
 
     async def _parse_data(self) -> bool:
         try:
             response = self._parser.get()
         except ProtocolError as exc:
             # ProtocolError is fatal
-            self.logger.exception(exc)
-            await self.reconnect()
+            await self._do_close(exc)
             return False
 
         if response is None:
@@ -389,6 +402,8 @@ class NSQConnection(NSQConnectionBase):
 
         while self.is_subscribed:
             message = await self._message_queue.get()
+            if message is None:
+                return
             yield message
 
     def get_message(self) -> Optional[NSQMessage]:

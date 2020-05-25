@@ -34,7 +34,7 @@ class TCPConnection(abc.ABC):
         self._debug = debug
         self.logger = logger or get_logger(debug)
 
-        self._message_queue: asyncio.Queue[NSQMessage] = \
+        self._message_queue: asyncio.Queue[Optional[NSQMessage]] = \
             message_queue or asyncio.Queue()
         self._status: ConnectionStatus = ConnectionStatus.INIT
         self._reader: Optional[StreamReader] = None
