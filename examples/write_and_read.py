@@ -11,8 +11,8 @@ async def main():
     await nsq.subscribe('test_topic', 'channel1', 2)
     processed_messages = 0
     async for message in nsq.messages():
-        await message.fin()
         print('Message #{}: {}'.format(processed_messages, message.body))
+        await message.fin()
         processed_messages += 1
 
         if processed_messages == 10:
