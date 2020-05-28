@@ -1,7 +1,8 @@
 # ansq - Async NSQ
 [![PyPI version](https://badge.fury.io/py/ansq.svg)](https://badge.fury.io/py/ansq)
 ![Tests](https://github.com/list-family/ansq/workflows/Test/badge.svg)
-[![Coverage](https://codecov.io/list-family/ansq/branch/master/graph/badge.svg)](https://codecov.io/gh/list-family/ansq)
+[![Coverage](https://codecov.io/gh/list-family/ansq/branch/master/graph/badge.svg)](https://codecov.io/gh/list-family/ansq)  
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/ansq)
 
 Written with native Asyncio NSQ package
 
