@@ -26,7 +26,8 @@ def not_processed(func):
 
 class NSQMessage:
     def __init__(
-            self, message_schema: 'NSQMessageSchema', connection: 'NSQConnection',
+            self, message_schema: 'NSQMessageSchema',
+            connection: 'NSQConnection',
             timeout: int = 60000, is_processed: bool = False):
         self.timestamp = message_schema.timestamp
         self.attempts = message_schema.attempts
