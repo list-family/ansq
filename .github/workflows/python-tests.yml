@@ -1,0 +1,51 @@
+name: Test
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+    tags:
+  schedule:
+    # Run everyday at 02:34 UTC
+    - cron: 34 2 * * *
+
+jobs:
+  test:
+    name: ${{ matrix.os }} / Python ${{ matrix.python-version }}
+    runs-on: ${{ matrix.os }}-latest
+    services:
+      nsqd:
+        image: nsqio/nsq
+        options: --entrypoint /nsqd
+        ports:
+          - 4150:4150
+          - 4151:4151
+    strategy:
+      matrix:
+        os:
+          - Ubuntu
+        python-version:
+          - 3.6
+          - 3.7
+          - 3.8
+    env:
+      PY_COLORS: 1
+      PYTEST_ADDOPTS: --cov-report=xml
+    steps:
+      - uses: actions/checkout@master
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install test dependencies
+        run: python -m pip install tox-gh-actions
+      - name: Prepare test environment
+        run: tox --notest
+      - name: Test
+        run: tox
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v1.0.6
+        with:
+          file: ./coverage.xml
+          name: ${{ runner.os }}-${{ matrix.python-version }}
