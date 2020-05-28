@@ -2,8 +2,6 @@
 
 :see: https://nsq.io/clients/tcp_protocol_spec.html
 """
-from __future__ import annotations
-
 import abc
 import struct
 from typing import Any, Optional, Tuple, Union

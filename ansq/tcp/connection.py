@@ -1,8 +1,7 @@
-from __future__ import annotations
-
 import asyncio
 import json
 import logging
+import sys
 from asyncio.events import AbstractEventLoop
 from time import time
 from typing import Optional, Callable, Any, Union, Generator
@@ -106,7 +105,8 @@ class NSQConnection(NSQConnectionBase):
 
         try:
             self._writer.close()
-            await self._writer.wait_closed()
+            if sys.version_info >= (3, 7):
+                await self._writer.wait_closed()
         finally:
             pass
 
@@ -397,7 +397,7 @@ class NSQConnection(NSQConnectionBase):
 
         await self.rdy(messages_count)
 
-    async def messages(self) -> Generator[NSQMessage, None]:
+    async def messages(self) -> Generator[NSQMessage, None, None]:
         """Generator, yields messages"""
         assert self.is_subscribed, (
             'You should subscribe to the topic first')
