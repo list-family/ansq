@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
+from asyncio.events import AbstractEventLoop
 from time import time
 from typing import Optional, Callable, Any, Union, Generator
 
@@ -420,8 +422,24 @@ class NSQConnection(NSQConnectionBase):
         return await self.message_queue.get()
 
 
-async def open_connection(*args, **kwargs) -> NSQConnection:
-    nsq = NSQConnection(*args, **kwargs)
+async def open_connection(
+        host: str = 'localhost', port: int = 4150, *,
+        message_queue: asyncio.Queue = None, on_message: Callable = None,
+        on_exception: Callable = None, loop: AbstractEventLoop = None,
+        auto_reconnect: bool = True, heartbeat_interval: int = 30000,
+        feature_negotiation: bool = True, tls_v1: bool = False,
+        snappy: bool = False, deflate: bool = False,
+        deflate_level: int = 6, sample_rate: int = 0,
+        debug: bool = False, logger: logging.Logger = None
+) -> NSQConnection:
+    nsq = NSQConnection(
+        host, port, message_queue=message_queue, on_message=on_message,
+        on_exception=on_exception, loop=loop, auto_reconnect=auto_reconnect,
+        heartbeat_interval=heartbeat_interval,
+        feature_negotiation=feature_negotiation, tls_v1=tls_v1,
+        snappy=snappy, deflate=deflate, deflate_level=deflate_level,
+        sample_rate=sample_rate, debug=debug, logger=logger
+    )
     await nsq.connect()
     await nsq.identify()
     return nsq
