@@ -14,8 +14,7 @@ class NSQHTTPConnection:
         self._endpoint = (host, port)
         self._base_url = 'http://{0}:{1}/'.format(*self._endpoint)
 
-        self._session = aiohttp.ClientSession(connector=aiohttp.TCPConnector(),
-                                              loop=self._loop)
+        self._session = aiohttp.ClientSession()
 
     @property
     def endpoint(self):

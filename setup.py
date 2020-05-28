@@ -4,7 +4,7 @@ from ansq import __version__
 
 PY_VER = sys.version_info
 install_requires = [
-    'aiohttp==3.6.2',
+    'aiohttp>=1.0.0',
 ]
 
 classifiers = [
