@@ -17,7 +17,7 @@ __all__ = 'Reader'
 
 
 class BaseReader(metaclass=abc.ABCMeta):
-    @abc.abstractmethod   # pragma: no cover
+    @abc.abstractmethod  # pragma: no cover
     def feed(self, chunk):
         pass
 
@@ -25,7 +25,7 @@ class BaseReader(metaclass=abc.ABCMeta):
     def get(self):
         pass
 
-    @abc.abstractmethod   # pragma: no cover
+    @abc.abstractmethod  # pragma: no cover
     def encode_command(self, cmd, *args, data=None):
         pass
 
