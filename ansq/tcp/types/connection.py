@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import abc
 import asyncio
 import logging
@@ -93,7 +91,7 @@ class TCPConnection(abc.ABC):
         return self._in_flight
 
     @property
-    def message_queue(self) -> asyncio.Queue[NSQMessage]:
+    def message_queue(self) -> 'asyncio.Queue[NSQMessage]':
         return self._message_queue
 
     @property
@@ -150,7 +148,7 @@ class TCPConnection(abc.ABC):
             self, command: Union[str, bytes], *args, data: Any = None,
             callback: Callable = None
     ) -> Optional[
-        Union[NSQResponseSchema, NSQErrorSchema, NSQMessageSchema]
+        Union['NSQResponseSchema', 'NSQErrorSchema', 'NSQMessageSchema']
     ]:
         raise NotImplementedError()
 
@@ -182,7 +180,7 @@ class TCPConnection(abc.ABC):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def _on_message_hook(self, response: NSQMessageSchema):
+    def _on_message_hook(self, response: 'NSQMessageSchema'):
         raise NotImplementedError()
 
     @abc.abstractmethod

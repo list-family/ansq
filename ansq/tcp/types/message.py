@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from functools import wraps
 from time import time
 from typing import TYPE_CHECKING
@@ -18,7 +16,7 @@ def not_processed(func):
     :raises RuntimeWarning: in case message was processed earlier.
     """
     @wraps(func)
-    async def decorator(cls: NSQMessage, *args, **kwargs):
+    async def decorator(cls: 'NSQMessage', *args, **kwargs):
         if cls.is_processed:
             raise RuntimeWarning('Message has already been processed')
         response = await func(cls, *args, **kwargs)
@@ -28,7 +26,7 @@ def not_processed(func):
 
 class NSQMessage:
     def __init__(
-            self, message_schema: NSQMessageSchema, connection: NSQConnection,
+            self, message_schema: 'NSQMessageSchema', connection: 'NSQConnection',
             timeout: int = 60000, is_processed: bool = False):
         self.timestamp = message_schema.timestamp
         self.attempts = message_schema.attempts
