@@ -3,7 +3,7 @@ import json
 import aiohttp
 
 from .http_exceptions import HTTP_EXCEPTIONS, NSQHTTPException
-from ..utils import _convert_to_str
+from ..utils import convert_to_str
 
 
 class NSQHTTPConnection:
@@ -24,7 +24,7 @@ class NSQHTTPConnection:
         return await self._session.close()
 
     async def perform_request(self, method, url, params, body):
-        _body = _convert_to_str(body) if body else body
+        _body = convert_to_str(body) if body else body
         url = self._base_url + url
         print(method, url, params, _body)
         try:

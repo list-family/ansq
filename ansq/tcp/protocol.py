@@ -11,7 +11,7 @@ from ansq.tcp.exceptions import ProtocolError
 from ansq.tcp.types import (
     FrameType, NSQResponseSchema, NSQMessageSchema, NSQErrorSchema
 )
-from ansq.utils import _convert_to_bytes
+from ansq.utils import convert_to_bytes
 
 __all__ = 'Reader'
 
@@ -129,8 +129,8 @@ class Reader(BaseReader):
 
     def encode_command(self, cmd: str, *args, data: Any = None) -> bytes:
         """Encode command to bytes"""
-        _cmd = _convert_to_bytes(cmd.upper().strip())
-        _args = [_convert_to_bytes(a) for a in args]
+        _cmd = convert_to_bytes(cmd.upper().strip())
+        _args = [convert_to_bytes(a) for a in args]
         body_data, params_data = b'', b''
 
         if len(_args):
@@ -148,6 +148,6 @@ class Reader(BaseReader):
 
     @staticmethod
     def _encode_body(data: Any) -> bytes:
-        _data = _convert_to_bytes(data)
+        _data = convert_to_bytes(data)
         result = struct.pack('>l', len(_data)) + _data
         return result
