@@ -36,11 +36,13 @@ def convert_to_bytes(value):
 @convert_to_bytes.register(bytes)
 @convert_to_bytes.register(bytearray)
 def _(value: Union[bytes, bytearray]) -> bytes:
+    """Convert ``bytes`` or ``bytearray`` to bytes"""
     return value
 
 
 @convert_to_bytes.register(str)
 def _(value: str) -> bytes:
+    """Convert ``str`` to bytes"""
     return value.encode('utf-8')
 
 
@@ -48,6 +50,7 @@ def _(value: str) -> bytes:
 @convert_to_bytes.register(float)
 @convert_to_bytes.register(Decimal)
 def _(value: Union[int, float, Decimal]) -> bytes:
+    """Convert ``int``, ``float`` or ``Decimal`` to bytes"""
     return str(value).encode('utf-8')
 
 
@@ -64,22 +67,26 @@ def convert_to_str(value):
 
 @convert_to_str.register(str)
 def _(value: str) -> str:
+    """Convert ``str`` to str"""
     return value
 
 
 @convert_to_str.register(bytes)
 def _(value: bytes) -> str:
+    """Convert ``bytes`` to str"""
     return value.decode('utf-8')
 
 
 @convert_to_str.register(bytearray)
 def _(value: bytearray) -> str:
+    """Convert ``bytearray`` to str"""
     return bytes(value).decode('utf-8')
 
 
 @convert_to_str.register(int)
 @convert_to_str.register(float)
 def _(value: Union[int, float]) -> str:
+    """Convert ``int`` or ``float`` to str"""
     return str(value)
 
 
