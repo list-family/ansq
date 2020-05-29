@@ -1,5 +1,5 @@
 from .base import NSQHTTPConnection
-from ..utils import _convert_to_str
+from ..utils import convert_to_str
 
 
 class NSQDHTTPWriter(NSQHTTPConnection):
@@ -33,7 +33,7 @@ class NSQDHTTPWriter(NSQHTTPConnection):
     async def mpub(self, topic, *messages):
         """Returns version information."""
         assert len(messages), "Specify one or mor message"
-        _msgs = [_convert_to_str(m) for m in messages]
+        _msgs = [convert_to_str(m) for m in messages]
         msgs = '\n'.join(_msgs)
         resp = await self.perform_request(
             'POST', 'mpub', {'topic': topic}, msgs)

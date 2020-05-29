@@ -1,79 +1,92 @@
 import re
 import logging
-from urllib.parse import urlparse
-
-TOPIC_NAME_RE = re.compile(r'^[\.a-zA-Z0-9_-]+$')
-CHANNEL_NAME_RE = re.compile(r'^[\.a-zA-Z0-9_-]+(#ephemeral)?$')
-
-
-def get_host_and_port(host):
-    host_parsed = urlparse(host)
-    if host_parsed.scheme == 'tcp':
-        result = host_parsed.netloc
-    elif host_parsed.scheme == '':
-        result = host_parsed.path
-    else:
-        result = host
-    result = result.split(':')
-    if len(result) == 2:
-        return result[0], result[-1]
-    else:
-        return result[0], None
+from functools import singledispatch
+from typing import Union, Tuple, Optional
+from urllib.parse import urlsplit
 
 
-def valid_topic_name(topic):
-    if not 0 < len(topic) < 33:
-        return False
-    return bool(TOPIC_NAME_RE.match(topic))
+def get_host_port(uri: str) -> Tuple[str, Optional[int]]:
+    """Get host and port from provided URI."""
+    split_uri = urlsplit(uri)
+    return split_uri.hostname, split_uri.port
 
 
-def valid_channel_name(channel):
-    if not 0 < len(channel) < 33:
-        return False
-    return bool(CHANNEL_NAME_RE.match(channel))
+def validate_topic_channel_name(name: str):
+    """Validate topic/channel names.
+    The regex is ``^[.a-zA-Z0-9_-]{2,64}+(#ephemeral)?$``
+
+    :raises AssertionError: Value not matches regex.
+    """
+    assert re.match(r'^[.a-zA-Z0-9_-]{2,64}(#ephemeral)?$', name), (
+        'Topic name must matches ^[.a-zA-Z0-9_-]{2,64}+(#ephemeral)?$ regex')
 
 
-_converters_to_bytes_map = {
-    bytes: lambda val: val,
-    bytearray: lambda val: val,
-    str: lambda val: val.encode('utf-8'),
-    int: lambda val: str(val).encode('utf-8'),
-    float: lambda val: str(val).encode('utf-8'),
-}
+@singledispatch
+def convert_to_bytes(value):
+    """Base dispatch for unregistered convertible types
+
+    :raises TypeError:
+    """
+    raise TypeError(
+        'Argument {} expected to be type of '
+        'bytes, str, int or float'.format(value))
 
 
-_converters_to_str_map = {
-    str: lambda val: val,
-    bytearray: lambda val: bytes(val).decode('utf-8'),
-    bytes: lambda val: val.decode('utf-8'),
-    int: lambda val: str(val),
-    float: lambda val: str(val),
-}
+@convert_to_bytes.register(bytes)
+@convert_to_bytes.register(bytearray)
+def _(value: Union[bytes, bytearray]) -> bytes:
+    return value
 
 
-def _convert_to_bytes(value):
-    if type(value) in _converters_to_bytes_map:
-        converted_value = _converters_to_bytes_map[type(value)](value)
-    else:
-        raise TypeError("Argument {!r} expected to be of bytes,"
-                        " str, int or float type".format(value))
-    return converted_value
+@convert_to_bytes.register(str)
+def _(value: str) -> bytes:
+    return value.encode('utf-8')
 
 
-def _convert_to_str(value):
-    if type(value) in _converters_to_str_map:
-        converted_value = _converters_to_str_map[type(value)](value)
-    else:
-        raise TypeError("Argument {!r} expected to be of bytes,"
-                        " str, int or float type".format(value))
-    return converted_value
+@convert_to_bytes.register(int)
+@convert_to_bytes.register(float)
+def _(value: Union[int, float]) -> bytes:
+    return str(value).encode('utf-8')
 
 
-class MaxRetriesExcited(Exception):
-    pass
+@singledispatch
+def convert_to_str(value):
+    """Base dispatch for unregistered convertible types
+
+    :raises TypeError:
+    """
+    raise TypeError(
+        'Argument {} expected to be type of '
+        'bytes, str, int or float'.format(value))
+
+
+@convert_to_str.register(str)
+def _(value: str) -> str:
+    return value
+
+
+@convert_to_str.register(bytes)
+def _(value: bytes) -> str:
+    return value.decode('utf-8')
+
+
+@convert_to_str.register(bytearray)
+def _(value: bytearray) -> str:
+    return bytes(value).decode('utf-8')
+
+
+@convert_to_str.register(int)
+@convert_to_str.register(float)
+def _(value: Union[int, float]) -> str:
+    return str(value)
 
 
 def get_logger(debug: bool = False):
+    """Get the ansq logger.
+
+    :params debug: Set up debug level.
+    :type debug: :class:`bool`
+    """
     logger = logging.getLogger('ansq')
     log_format = "%(asctime)s - %(levelname)s - %(name)s: %(message)s"
     logging.basicConfig(format=log_format)
