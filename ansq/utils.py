@@ -69,7 +69,7 @@ def _convert_to_str(value):
     return converted_value
 
 
-class MaxRetriesExcited(Exception):
+class MaxRetriesExceeded(Exception):
     pass
 
 
