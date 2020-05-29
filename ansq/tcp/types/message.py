@@ -31,7 +31,7 @@ class NSQMessage:
             timeout: int = 60000, is_processed: bool = False):
         self.timestamp = message_schema.timestamp
         self.attempts = message_schema.attempts
-        self.body = message_schema.body.decode('utf-8')
+        self.body = message_schema.body
         self.id = message_schema.id
         self._connection = connection
         self._is_processed = is_processed
@@ -41,7 +41,7 @@ class NSQMessage:
 
     def __repr__(self):
         return (
-            '<NSQMessage id="{id}", body="{body}", attempts={attempts}, '
+            '<NSQMessage id="{id}", body={body}, attempts={attempts}, '
             'timestamp={timestamp}, timeout={timeout}, '
             'initialized_at={initialized_at}, is_timed_out={is_timed_out}, '
             'is_processed={is_processed}>'.format(
@@ -53,7 +53,12 @@ class NSQMessage:
         )
 
     def __str__(self):
-        return self.body
+        """Returns decoded message's body.
+
+        :raises UnicodeDecodeError: Trying to decode bytes like ``b'\xa1'``.
+            Be careful. Call this method only if you sure that the body is str.
+        """
+        return self.body.decode('utf-8')
 
     @property
     def is_processed(self) -> bool:

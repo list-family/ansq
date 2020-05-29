@@ -7,7 +7,10 @@ async def main(nsq: NSQConnection):
     await nsq.subscribe('test_topic', 'channel1', 2)
     while True:
         async for message in nsq.messages():
-            print('Message: ' + message.body)
+            print('Message: ' + str(message))
+            # message.body is bytes,
+            # __str__ method decodes bytes
+            #
             # Something do with messages...
             # Then, mark as processed it
             await message.fin()
@@ -25,6 +28,9 @@ async def main(nsq: NSQConnection):
         # Connection status: ConnectionStatus.CLOSING
         # Connection status: ConnectionStatus.CLOSED
 
+        # You can reconnect here in try-except block
+        # or just leave the function and finish the program.
+        # It's all depends on the design of your application.
         return
 
 

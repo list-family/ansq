@@ -24,7 +24,7 @@ Roadmap:
 
 ## Examples
 
-Write and read messages:
+### Write and read messages:
 ```python
 import asyncio
 from ansq import open_connection
@@ -42,7 +42,7 @@ async def main():
     await nsq.subscribe('test_topic', 'channel1', 2)
     processed_messages = 0
     async for message in nsq.messages():
-        print('Message #{}: {}'.format(processed_messages, message.body))
+        print('Message #{}: {}'.format(processed_messages, message))
         # Message #0: test_message
         # Message #1: t
         # Message #2: e
@@ -57,12 +57,14 @@ async def main():
             break
 
     single_message = await nsq.wait_for_message()
-    print(single_message)
-    # Prints message.body
+    print('Single message: ' + str(single_message))
+    # message.body is bytes, 
+    # __str__ method decodes bytes
+    # Prints decoded message.body
 
     # Also it has real good repr
     print(repr(single_message))
-    # <NSQMessage id="0d406ce4661af003", body="e", attempts=1, 
+    # <NSQMessage id="0d406ce4661af003", body=b'e', attempts=1, 
     #     timestamp=1590162134305413767, timeout=60000, 
     #     initialized_at=1590162194.8242455, is_timed_out=False, 
     #     is_processed=False>
@@ -88,7 +90,7 @@ if __name__ == '__main__':
 
 ```
 
-Consumer with :
+### Consumer:
 ```python
 import asyncio
 from ansq import open_connection
@@ -99,7 +101,10 @@ async def main(nsq: NSQConnection):
     await nsq.subscribe('test_topic', 'channel1', 2)
     while True:
         async for message in nsq.messages():
-            print('Message: ' + message.body)
+            print('Message: ' + str(message))
+            # message.body is bytes, 
+            # __str__ method decodes bytes
+            #
             # Something do with messages...
             # Then, mark as processed it
             await message.fin()
@@ -117,6 +122,9 @@ async def main(nsq: NSQConnection):
         # Connection status: ConnectionStatus.CLOSING
         # Connection status: ConnectionStatus.CLOSED
 
+        # You can reconnect here in try-except block
+        # or just leave the function and finish the program.
+        # It's all depends on the design of your application.
         return
 
 

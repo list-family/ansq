@@ -168,3 +168,30 @@ async def test_read_single_message_via_get_message():
 
     await nsq.close()
     assert nsq.is_closed
+
+
+@pytest.mark.asyncio
+async def test_read_bytes_message():
+    nsq = await open_connection()
+    assert nsq.status.is_connected
+
+    response = await nsq.pub(
+        'test_read_bytes_message', b'\xa1')
+    assert response.is_ok
+
+    response = await nsq.sub('test_read_bytes_message', 'channel1')
+    assert response.is_ok
+
+    await nsq.rdy(1)
+    message = await nsq.message_queue.get()
+    assert not message.is_processed
+
+    assert message.body == b'\xa1'
+    with pytest.raises(UnicodeDecodeError):
+        str(message)
+
+    await message.fin()
+    assert message.is_processed
+
+    await nsq.close()
+    assert nsq.is_closed
