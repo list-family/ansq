@@ -11,6 +11,7 @@ from ansq.tcp.types import (
     TCPConnection as NSQConnectionBase, ConnectionStatus, NSQMessage,
     NSQResponseSchema, NSQMessageSchema, NSQErrorSchema, NSQCommands
 )
+from ansq.utils import validate_topic_channel_name
 
 
 class NSQConnection(NSQConnectionBase):
@@ -322,7 +323,9 @@ class NSQConnection(NSQConnectionBase):
     async def sub(self, topic, channel) -> Union[
         NSQResponseSchema, NSQErrorSchema
     ]:
-        """Subscribe to a topic/channel"""
+        """Subscribe to the topic and channel"""
+        validate_topic_channel_name(topic)
+        validate_topic_channel_name(channel)
         response = await self.execute(NSQCommands.SUB, topic, channel)
         if isinstance(response, NSQResponseSchema):
             self._topic = topic
@@ -334,6 +337,7 @@ class NSQConnection(NSQConnectionBase):
         NSQResponseSchema, NSQErrorSchema
     ]:
         """Publish a message to a topic"""
+        validate_topic_channel_name(topic)
         return await self.execute(
             NSQCommands.PUB, topic, data=message)
 
@@ -341,6 +345,7 @@ class NSQConnection(NSQConnectionBase):
         NSQResponseSchema, NSQErrorSchema
     ]:
         """Publish a deferred message to a topic"""
+        validate_topic_channel_name(topic)
         return await self.execute(
             NSQCommands.DPUB, topic, delay_time, data=message)
 
@@ -348,6 +353,7 @@ class NSQConnection(NSQConnectionBase):
         NSQResponseSchema, NSQErrorSchema
     ]:
         """Publish multiple messages to a topic"""
+        validate_topic_channel_name(topic)
         return await self.execute(
             NSQCommands.MPUB, topic,
             data=messages if len(messages) > 1 else messages[0]
@@ -418,7 +424,14 @@ class NSQConnection(NSQConnectionBase):
             return None
 
     async def wait_for_message(self) -> NSQMessage:
-        """Shortcut for `asyncio.Queue.get()``."""
+        """Shortcut for `asyncio.Queue.get()``.
+
+        :rtype: :class:`NSQMessage`
+        :returns: :class:`NSQMessage`.
+            Be aware on closing action may returns ``None``.
+            This is need to exit from ``NSQConnection.messages`` generator
+            when connection closed with exception.
+        """
         return await self.message_queue.get()
 
 
