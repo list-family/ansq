@@ -1,5 +1,6 @@
 import re
 import logging
+from decimal import Decimal
 from functools import singledispatch
 from typing import Union, Tuple, Optional
 from urllib.parse import urlsplit
@@ -45,7 +46,8 @@ def _(value: str) -> bytes:
 
 @convert_to_bytes.register(int)
 @convert_to_bytes.register(float)
-def _(value: Union[int, float]) -> bytes:
+@convert_to_bytes.register(Decimal)
+def _(value: Union[int, float, Decimal]) -> bytes:
     return str(value).encode('utf-8')
 
 
