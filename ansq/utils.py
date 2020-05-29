@@ -17,7 +17,7 @@ def validate_topic_channel_name(name: str):
 
     :raises AssertionError: Value not matches regex.
     """
-    assert re.match(r'^[.a-zA-Z0-9_-]{2,64}(#ephemeral)?$', name), (
+    assert re.match(r'^[.a-zA-Z0-9_\-]{2,64}(#ephemeral)?$', name), (
         'Topic name must matches ^[.a-zA-Z0-9_-]{2,64}+(#ephemeral)?$ regex')
 
 
