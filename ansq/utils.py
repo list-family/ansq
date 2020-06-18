@@ -48,9 +48,10 @@ def _(value: str) -> bytes:
 
 @convert_to_bytes.register(int)
 @convert_to_bytes.register(float)
+@convert_to_bytes.register(dict)
 @convert_to_bytes.register(Decimal)
 def _(value: Union[int, float, Decimal]) -> bytes:
-    """Convert ``int``, ``float`` or ``Decimal`` to bytes"""
+    """Convert ``int``, ``float``, ``dict`` or ``Decimal`` to bytes"""
     return str(value).encode('utf-8')
 
 
@@ -62,7 +63,7 @@ def convert_to_str(value):
     """
     raise TypeError(
         'Argument {} expected to be type of '
-        'bytes, str, int or float'.format(value))
+        'bytes, str, int, float or dict'.format(value))
 
 
 @convert_to_str.register(str)
