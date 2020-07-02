@@ -1,9 +1,13 @@
-import re
+import json
 import logging
+import re
 from decimal import Decimal
 from functools import singledispatch
+from sys import version_info
 from typing import Union, Tuple, Optional
 from urllib.parse import urlsplit
+
+PY37 = version_info >= (3, 7)
 
 
 def get_host_port(uri: str) -> Tuple[str, Optional[int]]:
@@ -23,14 +27,23 @@ def validate_topic_channel_name(name: str):
 
 
 @singledispatch
-def convert_to_bytes(value):
-    """Base dispatch for unregistered convertible types
+def convert_to_bytes(value) -> bytes:
+    """Dispatch for convertible types.
+
+    Allowed types: ``bytes``, ``bytearray``, ``str``, ``int``, ``float``,
+        ``dict``, ``Decimal``, ``dataclass``.
 
     :raises TypeError:
     """
+    if PY37:
+        from dataclasses import asdict, is_dataclass
+        if is_dataclass(value) and not isinstance(value, type):
+            return convert_to_bytes(asdict(value))
     raise TypeError(
         'Argument {} expected to be type of '
-        'bytes, str, int or float'.format(value))
+        'bytes, bytearray, str, int, float, dict, Decimal '
+        'or dataclass'.format(value)
+    )
 
 
 @convert_to_bytes.register(bytes)
@@ -48,47 +61,68 @@ def _(value: str) -> bytes:
 
 @convert_to_bytes.register(int)
 @convert_to_bytes.register(float)
-@convert_to_bytes.register(dict)
 @convert_to_bytes.register(Decimal)
 def _(value: Union[int, float, Decimal]) -> bytes:
-    """Convert ``int``, ``float``, ``dict`` or ``Decimal`` to bytes"""
+    """Convert ``int``, ``float`` or ``Decimal`` to bytes"""
     return str(value).encode('utf-8')
+
+
+@convert_to_bytes.register(dict)
+def _(value: dict) -> bytes:
+    """Convert ``dict`` to bytes"""
+    return json.dumps(value, separators=(',', ':')).encode('utf-8')
 
 
 @singledispatch
 def convert_to_str(value):
-    """Base dispatch for unregistered convertible types
+    """Dispatch for convertible types.
+
+    Allowed types: ``bytes``, ``bytearray``, ``str``, ``int``, ``float``,
+        ``dict``, ``Decimal``, ``dataclass``.
 
     :raises TypeError:
     """
+    if PY37:
+        from dataclasses import asdict, is_dataclass
+        if is_dataclass(value) and not isinstance(value, type):
+            return convert_to_str(asdict(value))
     raise TypeError(
         'Argument {} expected to be type of '
-        'bytes, str, int, float or dict'.format(value))
+        'bytes, bytearray, str, int, float, dict, Decimal '
+        'or dataclass'.format(value)
+    )
 
 
 @convert_to_str.register(str)
 def _(value: str) -> str:
-    """Convert ``str`` to str"""
+    """Convert ``str`` to ``str``"""
     return value
 
 
 @convert_to_str.register(bytes)
 def _(value: bytes) -> str:
-    """Convert ``bytes`` to str"""
+    """Convert ``bytes`` to ``str``"""
     return value.decode('utf-8')
 
 
 @convert_to_str.register(bytearray)
 def _(value: bytearray) -> str:
-    """Convert ``bytearray`` to str"""
+    """Convert ``bytearray`` to ``str``"""
     return bytes(value).decode('utf-8')
 
 
 @convert_to_str.register(int)
 @convert_to_str.register(float)
-def _(value: Union[int, float]) -> str:
-    """Convert ``int`` or ``float`` to str"""
+@convert_to_str.register(Decimal)
+def _(value: Union[int, float, Decimal]) -> str:
+    """Convert ``int``, ``float`` or ``Decimal`` to ``str``"""
     return str(value)
+
+
+@convert_to_str.register(dict)
+def _(value: dict) -> str:
+    """Convert ``dict`` to JSON string"""
+    return json.dumps(value)
 
 
 def get_logger(debug: bool = False):
