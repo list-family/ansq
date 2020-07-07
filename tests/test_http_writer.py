@@ -83,7 +83,7 @@ async def test_empty_topic(writer):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    'method_name', ('empty_topic', 'topic_pause', 'topic_unpause'),
+    'method_name', ('topic_pause', 'topic_unpause'),
 )
 async def test_pausable_topic(writer, method_name):
     topic = 'test-pausable-topic'
