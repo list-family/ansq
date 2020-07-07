@@ -11,7 +11,7 @@ class NSQDHTTPWriter(NSQHTTPConnection):
         """Monitoring endpoint.
         :returns: should return `"OK"`, otherwise raises an exception.
         """
-        return self.perform_request('GET', 'ping', None, None)
+        return await self.perform_request('GET', 'ping', None, None)
 
     async def info(self):
         """Returns version information."""
@@ -19,22 +19,19 @@ class NSQDHTTPWriter(NSQHTTPConnection):
         return resp
 
     async def stats(self):
-        """Returns version information."""
+        """Returns stats information."""
         resp = await self.perform_request(
             'GET', 'stats', {'format': 'json'}, None)
         return resp
 
     async def pub(self, topic, message):
-        """Returns version information."""
         resp = await self.perform_request(
             'POST', 'pub', {'topic': topic}, message)
         return resp
 
     async def mpub(self, topic, *messages):
-        """Returns version information."""
-        assert len(messages), "Specify one or mor message"
-        _msgs = [convert_to_str(m) for m in messages]
-        msgs = '\n'.join(_msgs)
+        assert len(messages), "Specify one or more messages"
+        msgs = '\n'.join(convert_to_str(m) for m in messages)
         resp = await self.perform_request(
             'POST', 'mpub', {'topic': topic}, msgs)
         return resp
