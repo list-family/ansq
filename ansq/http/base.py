@@ -9,7 +9,7 @@ from ..utils import convert_to_str
 class NSQHTTPConnection:
     """XXX"""
 
-    def __init__(self, host='127.0.0.1', port=4150, *, loop):
+    def __init__(self, host='127.0.0.1', port=4151, *, loop):
         self._loop = loop
         self._endpoint = (host, port)
         self._base_url = 'http://{0}:{1}/'.format(*self._endpoint)
@@ -26,13 +26,9 @@ class NSQHTTPConnection:
     async def perform_request(self, method, url, params, body):
         _body = convert_to_str(body) if body else body
         url = self._base_url + url
-        print(method, url, params, _body)
-        try:
-            resp = await self._session.request(method, url,
-                                               params=params,
-                                               data=_body)
-        except Exception as tmp:
-            print('exception', tmp)
+        resp = await self._session.request(method, url,
+                                           params=params,
+                                           data=_body)
         resp_body = await resp.text()
         try:
             response = json.loads(resp_body)
