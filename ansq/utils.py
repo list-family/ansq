@@ -1,13 +1,24 @@
 import json
 import logging
 import re
+from datetime import datetime
 from decimal import Decimal
+from enum import Enum
 from functools import singledispatch
 from sys import version_info
 from typing import Union, Tuple, Optional
 from urllib.parse import urlsplit
 
 PY37 = version_info >= (3, 7)
+
+
+class JSONEncoder(json.JSONEncoder):
+    def default(self, obj) -> str:
+        if isinstance(obj, Enum):
+            return obj.name
+        if isinstance(obj, datetime):
+            return obj.isoformat()
+        return json.JSONEncoder.default(self, obj)
 
 
 def get_host_port(uri: str) -> Tuple[str, Optional[int]]:
@@ -41,7 +52,7 @@ def convert_to_bytes(value) -> bytes:
             return convert_to_bytes(asdict(value))
     raise TypeError(
         'Argument {} expected to be type of '
-        'bytes, bytearray, str, int, float, dict, Decimal '
+        'bytes, bytearray, str, int, float, dict, Decimal, datetime '
         'or dataclass'.format(value)
     )
 
@@ -70,7 +81,23 @@ def _(value: Union[int, float, Decimal]) -> bytes:
 @convert_to_bytes.register(dict)
 def _(value: dict) -> bytes:
     """Convert ``dict`` to bytes"""
-    return json.dumps(value, separators=(',', ':')).encode('utf-8')
+    return json.dumps(
+        value,
+        cls=JSONEncoder,
+        separators=(',', ':'),
+    ).encode('utf-8')
+
+
+@convert_to_bytes.register(Enum)
+def _(value: Enum) -> bytes:
+    """Convert ``enum`` to bytes"""
+    return convert_to_bytes(value.name)
+
+
+@convert_to_bytes.register(datetime)
+def _(value: datetime) -> bytes:
+    """Convert ``datetime`` to bytes"""
+    return value.isoformat().encode('utf-8')
 
 
 @singledispatch
@@ -88,7 +115,7 @@ def convert_to_str(value):
             return convert_to_str(asdict(value))
     raise TypeError(
         'Argument {} expected to be type of '
-        'bytes, bytearray, str, int, float, dict, Decimal '
+        'bytes, bytearray, str, int, float, dict, Decimal, datetime '
         'or dataclass'.format(value)
     )
 
@@ -123,6 +150,18 @@ def _(value: Union[int, float, Decimal]) -> str:
 def _(value: dict) -> str:
     """Convert ``dict`` to JSON string"""
     return json.dumps(value)
+
+
+@convert_to_str.register(Enum)
+def _(value: Enum) -> str:
+    """Convert ``enum`` to str"""
+    return convert_to_str(value.name)
+
+
+@convert_to_str.register(datetime)
+def _(value: datetime) -> str:
+    """Convert ``datetime`` to bytes"""
+    return value.isoformat()
 
 
 def get_logger(debug: bool = False):
