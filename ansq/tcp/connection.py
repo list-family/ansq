@@ -22,7 +22,7 @@ class NSQConnection(NSQConnectionBase):
 
         self._writer.write(NSQCommands.MAGIC_V2)
         self._status = ConnectionStatus.CONNECTED
-        self.logger.info('Connect to {} established'.format(self.endpoint))
+        self.logger.debug('Connect to {} established'.format(self.endpoint))
 
         self._reader_task = self._loop.create_task(self._read_data_task())
 
@@ -60,7 +60,7 @@ class NSQConnection(NSQConnectionBase):
             await self._do_close(e)
             return False
 
-        self.logger.info('Reconnected to {}'.format(self.endpoint))
+        self.logger.debug('Reconnected to {}'.format(self.endpoint))
         self._status = ConnectionStatus.CONNECTED
         return True
 
@@ -116,7 +116,7 @@ class NSQConnection(NSQConnectionBase):
 
         if change_status:
             self._status = ConnectionStatus.CLOSED
-            self.logger.info('Connection {} is closed'.format(self.endpoint))
+            self.logger.debug('Connection {} is closed'.format(self.endpoint))
 
     async def execute(
             self, command: Union[str, bytes], *args, data: Any = None,
@@ -230,7 +230,7 @@ class NSQConnection(NSQConnectionBase):
             self._parser.feed(data)
             not self._is_upgrading and await self._read_buffer()
 
-        self.logger.info('Lost connection to NSQ')
+        self.logger.debug('Lost connection to NSQ')
         if self._auto_reconnect:
             await asyncio.sleep(1)
             self._reconnect_task = self._loop.create_task(
@@ -433,6 +433,28 @@ class NSQConnection(NSQConnectionBase):
             when connection closed with exception.
         """
         return await self.message_queue.get()
+
+    def register_handler(self, func):
+        """Decorator to register handler on messages
+
+        .. code-block:: python
+            :name: Example
+
+            @ansq.register_handler
+            async def handler(message: NSQMessage):
+                # message.body is bytes, __str__ method decodes bytes
+                #
+                # Something do with messages...
+                # Then, mark as processed it
+                print('Message: ' + str(message))
+                await message.fin()
+
+            await handler()
+        """
+        async def decorator():
+            async for message in self.messages():
+                await func(message)
+        return decorator
 
 
 async def open_connection(
