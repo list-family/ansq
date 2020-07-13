@@ -284,12 +284,6 @@ class NSQConnection(NSQConnectionBase):
     def _on_message_hook(self, message_schema: NSQMessageSchema):
         self._last_message_timestamp = time()
         message = NSQMessage(message_schema, self)
-
-        if self._on_message:
-            try:
-                message = self._on_message(message)
-            except Exception as e:
-                self._do_close(e)
         self._message_queue.put_nowait(message)
 
     async def _read_buffer(self):
@@ -440,6 +434,9 @@ class NSQConnection(NSQConnectionBase):
         .. code-block:: python
             :name: Example
 
+            await ansq = open_connection()
+            await ansq.subscribe('test_topic', 'test_channel')
+
             @ansq.register_handler
             async def handler(message: NSQMessage):
                 # message.body is bytes, __str__ method decodes bytes
@@ -449,17 +446,31 @@ class NSQConnection(NSQConnectionBase):
                 print('Message: ' + str(message))
                 await message.fin()
 
-            await handler()
+            await ansq.run_handler()
         """
-        async def decorator():
+        async def handler_decorator():
             async for message in self.messages():
                 await func(message)
-        return decorator
+
+        self._on_message = handler_decorator
+        return handler_decorator
+
+    async def run_handler(self, as_task: bool = False):
+        """Run message handler
+
+        :param as_task: Return context to application
+        :type as_task: :class:`bool`
+        """
+        assert self._on_message, 'Message handler not registered'
+        if as_task:
+            self._handler_task = self._loop.create_task(self._on_message())
+            return self._handler_task
+        return await self._on_message()
 
 
 async def open_connection(
         host: str = 'localhost', port: int = 4150, *,
-        message_queue: asyncio.Queue = None, on_message: Callable = None,
+        message_queue: asyncio.Queue = None,
         on_exception: Callable = None, loop: AbstractEventLoop = None,
         auto_reconnect: bool = True, heartbeat_interval: int = 30000,
         feature_negotiation: bool = True, tls_v1: bool = False,
@@ -468,7 +479,7 @@ async def open_connection(
         debug: bool = False, logger: logging.Logger = None
 ) -> NSQConnection:
     nsq = NSQConnection(
-        host, port, message_queue=message_queue, on_message=on_message,
+        host, port, message_queue=message_queue,
         on_exception=on_exception, loop=loop, auto_reconnect=auto_reconnect,
         heartbeat_interval=heartbeat_interval,
         feature_negotiation=feature_negotiation, tls_v1=tls_v1,

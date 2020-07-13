@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 class TCPConnection(abc.ABC):
     def __init__(
             self, host: str = 'localhost', port: int = 4150, *,
-            message_queue: asyncio.Queue = None, on_message: Callable = None,
+            message_queue: asyncio.Queue = None,
             on_exception: Callable = None, loop: AbstractEventLoop = None,
             auto_reconnect: bool = True, heartbeat_interval: int = 30000,
             feature_negotiation: bool = True, tls_v1: bool = False,
@@ -39,6 +39,7 @@ class TCPConnection(abc.ABC):
         self._writer: Optional[StreamWriter] = None
         self._reader_task: Optional[asyncio.Task] = None
         self._reconnect_task: Optional[asyncio.Future] = None
+        self._handler_task: Optional[asyncio.Future] = None
         self._auto_reconnect = auto_reconnect
         self._parser = Reader()
 
@@ -64,7 +65,7 @@ class TCPConnection(abc.ABC):
         self._is_authorized = False
 
         # Handlers
-        self._on_message = on_message
+        self._on_message: Optional[Callable] = None
         self._on_exception = on_exception
 
         # Reader setup
