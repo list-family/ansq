@@ -14,11 +14,10 @@ PY37 = version_info >= (3, 7)
 
 class JSONEncoder(json.JSONEncoder):
     def default(self, obj) -> str:
-        if isinstance(obj, Enum):
-            return obj.name
-        if isinstance(obj, datetime):
-            return obj.isoformat()
-        return json.JSONEncoder.default(self, obj)
+        try:
+            return convert_to_str(obj)
+        except TypeError:
+            return json.JSONEncoder.default(self, obj)
 
 
 def get_host_port(uri: str) -> Tuple[str, Optional[int]]:
