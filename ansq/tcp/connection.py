@@ -6,6 +6,7 @@ from asyncio.events import AbstractEventLoop
 from time import time
 from typing import Optional, Callable, Any, Union, Generator
 
+from ansq.tcp import consts
 from ansq.tcp.exceptions import ProtocolError, get_exception, NSQUnauthorized
 from ansq.tcp.types import (
     TCPConnection as NSQConnectionBase, ConnectionStatus, NSQMessage,
@@ -218,7 +219,7 @@ class NSQConnection(NSQConnectionBase):
         """Response reader task."""
         while not self._reader.at_eof():
             try:
-                data = await self._reader.read(52)
+                data = await self._reader.read(consts.MAX_CHUNK_SIZE)
             except asyncio.CancelledError:
                 # useful during update to TLS, task canceled but connection
                 # should not be closed
