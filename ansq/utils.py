@@ -14,6 +14,7 @@ PY37 = version_info >= (3, 7)
 
 class JSONEncoder(json.JSONEncoder):
     def default(self, obj) -> str:
+        """"""
         try:
             return convert_to_str(obj)
         except TypeError:
@@ -41,9 +42,9 @@ def convert_to_bytes(value) -> bytes:
     """Dispatch for convertible types.
 
     Allowed types: ``bytes``, ``bytearray``, ``str``, ``int``, ``float``,
-        ``dict``, ``Decimal``, ``dataclass``.
+    ``dict``, ``Decimal``, ``dataclass``.
 
-    :raises TypeError:
+    :raises TypeError: Unexpected value type
     """
     if PY37:
         from dataclasses import asdict, is_dataclass
@@ -100,13 +101,13 @@ def _(value: datetime) -> bytes:
 
 
 @singledispatch
-def convert_to_str(value):
+def convert_to_str(value) -> str:
     """Dispatch for convertible types.
 
     Allowed types: ``bytes``, ``bytearray``, ``str``, ``int``, ``float``,
-        ``dict``, ``Decimal``, ``dataclass``.
+    ``dict``, ``Decimal``, ``dataclass``.
 
-    :raises TypeError:
+    :raises TypeError: Unexpected value type
     """
     if PY37:
         from dataclasses import asdict, is_dataclass
@@ -163,8 +164,8 @@ def _(value: datetime) -> str:
     return value.isoformat()
 
 
-def get_logger(debug: bool = False):
-    """Get the ansq logger.
+def get_logger(debug: bool = False) -> logging.Logger:
+    """Get the ``ansq`` logger.
 
     :params debug: Set up debug level.
     :type debug: :class:`bool`

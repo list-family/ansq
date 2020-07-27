@@ -125,8 +125,9 @@ class NSQConnection(NSQConnectionBase):
     ) -> Optional[Union[NSQResponseSchema, NSQErrorSchema, NSQMessageSchema]]:
         """Execute command
 
-        Be careful: commands ``NOP``, ``FIN``, ``RDY``, ``REQ``, ``TOUCH``
-            by NSQ spec returns ``None`` as  The class:`asyncio.Future` result.
+        .. warning::
+           Be careful: commands ``NOP``, ``FIN``, ``RDY``, ``REQ``
+           and ``TOUCH`` returns ``None`` result by NSQ spec.
 
         :returns: The response from NSQ.
         """
@@ -427,9 +428,8 @@ class NSQConnection(NSQConnectionBase):
     async def wait_for_message(self) -> NSQMessage:
         """Shortcut for `asyncio.Queue.get()``.
 
-        :rtype: :class:`NSQMessage`
-        :returns: :class:`NSQMessage`.
-            Be aware on closing action may returns ``None``.
+        :rtype: :class:`~NSQMessage`
+        :returns: Be aware on closing action may returns ``None``.
             This is need to exit from ``NSQConnection.messages`` generator
             when connection closed with exception.
         """
