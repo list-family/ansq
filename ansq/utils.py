@@ -163,13 +163,16 @@ def _(value: datetime) -> str:
     return value.isoformat()
 
 
-def get_logger(debug: bool = False):
+def get_logger(debug: bool = False, unique_name: str = None):
     """Get the ansq logger.
 
     :params debug: Set up debug level.
     :type debug: :class:`bool`
+    :params unique_name: Used to make all loggers unique.
+    :type unique_name: :class:`str`
     """
-    logger = logging.getLogger('ansq')
+    logger = logging.getLogger(
+        'ansq {}'.format(unique_name) if unique_name else 'ansq')
     log_format = "%(asctime)s - %(levelname)s - %(name)s: %(message)s"
     logging.basicConfig(format=log_format)
     logger.setLevel(logging.DEBUG if debug else logging.INFO)

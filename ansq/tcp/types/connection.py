@@ -17,6 +17,8 @@ if TYPE_CHECKING:
 
 
 class TCPConnection(abc.ABC):
+    instances_count = 0
+
     def __init__(
             self, host: str = 'localhost', port: int = 4150, *,
             message_queue: asyncio.Queue = None, on_message: Callable = None,
@@ -27,10 +29,14 @@ class TCPConnection(abc.ABC):
             deflate_level: int = 6, sample_rate: int = 0,
             debug: bool = False, logger: logging.Logger = None
     ):
+        self.instance_number = self.__class__.instances_count
+        self.__class__.instances_count += 1
+
         self._host, self._port = host, port
         self._loop: AbstractEventLoop = loop or asyncio.get_event_loop()
         self._debug = debug
-        self.logger = logger or get_logger(debug)
+        self.logger = logger or get_logger(debug, '{}:{}.{}'.format(
+            self._host, self._port, self.instance_number))
 
         self._message_queue: asyncio.Queue[Optional[NSQMessage]] = \
             message_queue or asyncio.Queue()

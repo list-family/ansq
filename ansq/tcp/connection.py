@@ -23,7 +23,7 @@ class NSQConnection(NSQConnectionBase):
 
         self._writer.write(NSQCommands.MAGIC_V2)
         self._status = ConnectionStatus.CONNECTED
-        self.logger.info('Connect to {} established'.format(self.endpoint))
+        self.logger.debug('Connect to {} established'.format(self.endpoint))
 
         self._reader_task = self._loop.create_task(self._read_data_task())
 
@@ -61,7 +61,7 @@ class NSQConnection(NSQConnectionBase):
             await self._do_close(e)
             return False
 
-        self.logger.info('Reconnected to {}'.format(self.endpoint))
+        self.logger.debug('Reconnected to {}'.format(self.endpoint))
         self._status = ConnectionStatus.CONNECTED
         return True
 
@@ -117,7 +117,7 @@ class NSQConnection(NSQConnectionBase):
 
         if change_status:
             self._status = ConnectionStatus.CLOSED
-            self.logger.info('Connection {} is closed'.format(self.endpoint))
+            self.logger.debug('Connection {} is closed'.format(self.endpoint))
 
     async def execute(
             self, command: Union[str, bytes], *args, data: Any = None,
@@ -160,7 +160,8 @@ class NSQConnection(NSQConnectionBase):
             self._cmd_waiters.append((future, callback))
 
         command_raw = self._parser.encode_command(command, *args, data=data)
-        self.logger.debug('NSQ: Executing command %s' % command_raw)
+        if command != NSQCommands.NOP:
+            self.logger.debug('NSQ: Executing command %s' % command_raw)
         self._writer.write(command_raw)
 
         # track all processed and requeued messages
@@ -251,11 +252,11 @@ class NSQConnection(NSQConnectionBase):
         if response is None:
             return False
 
-        self.logger.debug('NSQ: Got data: %s', response)
-
         if response.is_heartbeat:
             await self._pulse()
             return True
+
+        self.logger.debug('NSQ: Got data: %s', response)
 
         if response.is_message:
             # track number in flight messages
