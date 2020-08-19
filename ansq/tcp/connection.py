@@ -4,14 +4,19 @@ import logging
 import sys
 from asyncio.events import AbstractEventLoop
 from time import time
-from typing import Optional, Callable, Any, Union, Generator
+from typing import Any, Callable, Generator, Optional, Union
 
 from ansq.tcp import consts
-from ansq.tcp.exceptions import ProtocolError, get_exception, NSQUnauthorized
+from ansq.tcp.exceptions import NSQUnauthorized, ProtocolError, get_exception
 from ansq.tcp.types import (
-    TCPConnection as NSQConnectionBase, ConnectionStatus, NSQMessage,
-    NSQResponseSchema, NSQMessageSchema, NSQErrorSchema, NSQCommands
+    ConnectionStatus,
+    NSQCommands,
+    NSQErrorSchema,
+    NSQMessage,
+    NSQMessageSchema,
+    NSQResponseSchema,
 )
+from ansq.tcp.types import TCPConnection as NSQConnectionBase
 from ansq.utils import validate_topic_channel_name
 
 
@@ -19,11 +24,12 @@ class NSQConnection(NSQConnectionBase):
     async def connect(self) -> bool:
         """Open connection"""
         self._reader, self._writer = await asyncio.open_connection(
-            self._host, self._port)
+            self._host, self._port
+        )
 
         self._writer.write(NSQCommands.MAGIC_V2)
         self._status = ConnectionStatus.CONNECTED
-        self.logger.debug('Connect to {} established'.format(self.endpoint))
+        self.logger.debug("Connect to {} established".format(self.endpoint))
 
         self._reader_task = self._loop.create_task(self._read_data_task())
 
@@ -44,7 +50,7 @@ class NSQConnection(NSQConnectionBase):
 
         :returns: Reconnect successful status.
         """
-        self.logger.debug('Reconnecting to {}...'.format(self.endpoint))
+        self.logger.debug("Reconnecting to {}...".format(self.endpoint))
         self._status = ConnectionStatus.RECONNECTING
 
         await self._do_close(change_status=False)
@@ -53,7 +59,8 @@ class NSQConnection(NSQConnectionBase):
             await self.identify()
             self._secret and await self.auth(self._secret)
             self._is_subscribed and await self.subscribe(
-                self._topic, self._channel, self.rdy_messages_count)
+                self._topic, self._channel, self.rdy_messages_count
+            )
         except Exception as e:
             if raise_error:
                 raise e
@@ -61,12 +68,11 @@ class NSQConnection(NSQConnectionBase):
             await self._do_close(e)
             return False
 
-        self.logger.debug('Reconnected to {}'.format(self.endpoint))
+        self.logger.debug("Reconnected to {}".format(self.endpoint))
         self._status = ConnectionStatus.CONNECTED
         return True
 
-    async def _do_close(
-            self, exception: Exception = None, change_status: bool = True):
+    async def _do_close(self, exception: Exception = None, change_status: bool = True):
         if self.is_closed or self.status.is_init or self.status.is_closing:
             return
 
@@ -75,11 +81,12 @@ class NSQConnection(NSQConnectionBase):
 
         if exception:
             self.logger.error(
-                'Connection {} is closing due an error: {}'.format(
-                    self.endpoint, exception))
+                "Connection {} is closing due an error: {}".format(
+                    self.endpoint, exception
+                )
+            )
         else:
-            self.logger.debug('Connection {} is closing...'.format(
-                self.endpoint))
+            self.logger.debug("Connection {} is closing...".format(self.endpoint))
 
         if self.is_subscribed and change_status:
             self._is_subscribed = False
@@ -94,11 +101,7 @@ class NSQConnection(NSQConnectionBase):
             except Exception as e:
                 self.logger.exception(e)
 
-        if (
-                change_status
-                and self._reconnect_task
-                and not self._reconnect_task.done()
-        ):
+        if change_status and self._reconnect_task and not self._reconnect_task.done():
             self._reconnect_task.cancel()
             try:
                 await self._reconnect_task
@@ -117,11 +120,14 @@ class NSQConnection(NSQConnectionBase):
 
         if change_status:
             self._status = ConnectionStatus.CLOSED
-            self.logger.debug('Connection {} is closed'.format(self.endpoint))
+            self.logger.debug("Connection {} is closed".format(self.endpoint))
 
     async def execute(
-            self, command: Union[str, bytes], *args, data: Any = None,
-            callback: Callable = None
+        self,
+        command: Union[str, bytes],
+        *args,
+        data: Any = None,
+        callback: Callable = None
     ) -> Optional[Union[NSQResponseSchema, NSQErrorSchema, NSQMessageSchema]]:
         """Execute command
 
@@ -131,28 +137,30 @@ class NSQConnection(NSQConnectionBase):
         :returns: The response from NSQ.
         """
         if command is None:
-            raise ValueError('Command must not be None')
+            raise ValueError("Command must not be None")
         if None in set(args):
-            raise ValueError('Args must not contain None')
+            raise ValueError("Args must not contain None")
 
         if (
-                self.is_auth_required
-                and not self.is_authorized
-                and command != NSQCommands.AUTH
+            self.is_auth_required
+            and not self.is_authorized
+            and command != NSQCommands.AUTH
         ):
-            raise NSQUnauthorized('NSQ server requires client authorization')
+            raise NSQUnauthorized("NSQ server requires client authorization")
 
         if self.status.is_reconnecting and not self._reconnect_task:
             await self._reconnect_task
 
-        assert self._reader, 'You should call `connect` method first'
-        assert self._status or command == NSQCommands.CLS, (
-            'Connection is closed')
+        assert self._reader, "You should call `connect` method first"
+        assert self._status or command == NSQCommands.CLS, "Connection is closed"
 
         future = self._loop.create_future()
         if command in (
-                NSQCommands.NOP, NSQCommands.FIN, NSQCommands.RDY,
-                NSQCommands.REQ, NSQCommands.TOUCH
+            NSQCommands.NOP,
+            NSQCommands.FIN,
+            NSQCommands.RDY,
+            NSQCommands.REQ,
+            NSQCommands.TOUCH,
         ):
             future.set_result(None)
             callback and callback(None)
@@ -161,13 +169,15 @@ class NSQConnection(NSQConnectionBase):
 
         command_raw = self._parser.encode_command(command, *args, data=data)
         if command != NSQCommands.NOP:
-            self.logger.debug('NSQ: Executing command %s' % command_raw)
+            self.logger.debug("NSQ: Executing command %s" % command_raw)
         self._writer.write(command_raw)
 
         # track all processed and requeued messages
         if command in (
-                NSQCommands.FIN, NSQCommands.REQ,
-                NSQCommands.FIN.decode(), NSQCommands.REQ.decode()
+            NSQCommands.FIN,
+            NSQCommands.REQ,
+            NSQCommands.FIN.decode(),
+            NSQCommands.REQ.decode(),
         ):
             self._in_flight = max(0, self._in_flight - 1)
 
@@ -175,14 +185,15 @@ class NSQConnection(NSQConnectionBase):
 
     async def identify(self, config: Union[dict, str] = None, **kwargs):
         if config and isinstance(config, (dict, str)):
-            raise TypeError('Config should be dict type or str')
+            raise TypeError("Config should be dict type or str")
 
         if config or kwargs:
             self._config = config or kwargs
         config = json.dumps(self._config)
 
         response = await self.execute(
-            NSQCommands.IDENTIFY, data=config, callback=self._start_upgrading)
+            NSQCommands.IDENTIFY, data=config, callback=self._start_upgrading
+        )
 
         if response in (NSQCommands.OK, NSQCommands.OK.decode()):
             await self._finish_upgrading()
@@ -191,13 +202,13 @@ class NSQConnection(NSQConnectionBase):
         response_config = json.loads(response.body)
         fut = None
 
-        if response_config.get('auth_required'):
+        if response_config.get("auth_required"):
             self._is_auth_required = True
-        if response_config.get('tls_v1'):
+        if response_config.get("tls_v1"):
             await self._upgrade_to_tls()
-        if response_config.get('snappy'):
+        if response_config.get("snappy"):
             fut = self._upgrade_to_snappy()
-        elif response_config.get('deflate'):
+        elif response_config.get("deflate"):
             fut = self._upgrade_to_deflate()
         await self._finish_upgrading()
 
@@ -208,13 +219,13 @@ class NSQConnection(NSQConnectionBase):
         return response
 
     async def _upgrade_to_tls(self):
-        raise NotImplementedError('Upgrade to TLSv1 not implemented yet')
+        raise NotImplementedError("Upgrade to TLSv1 not implemented yet")
 
     def _upgrade_to_snappy(self):
-        raise NotImplementedError('Upgrade to snappy not implemented yet')
+        raise NotImplementedError("Upgrade to snappy not implemented yet")
 
     def _upgrade_to_deflate(self):
-        raise NotImplementedError('Upgrade to deflate not implemented yet')
+        raise NotImplementedError("Upgrade to deflate not implemented yet")
 
     async def _read_data_task(self):
         """Response reader task."""
@@ -232,14 +243,14 @@ class NSQConnection(NSQConnectionBase):
             self._parser.feed(data)
             not self._is_upgrading and await self._read_buffer()
 
-        self.logger.info('Lost connection to NSQ')
+        self.logger.info("Lost connection to NSQ")
         if self._auto_reconnect:
             await asyncio.sleep(1)
             self._reconnect_task = self._loop.create_task(
                 self.reconnect(raise_error=False)
             )
         else:
-            await self._do_close(OSError('Lost connection to NSQ'))
+            await self._do_close(OSError("Lost connection to NSQ"))
 
     async def _parse_data(self) -> bool:
         try:
@@ -256,7 +267,7 @@ class NSQConnection(NSQConnectionBase):
             await self._pulse()
             return True
 
-        self.logger.debug('NSQ: Got data: %s', response)
+        self.logger.debug("NSQ: Got data: %s", response)
 
         if response.is_message:
             # track number in flight messages
@@ -306,9 +317,7 @@ class NSQConnection(NSQConnectionBase):
         await self._read_buffer()
         self._is_upgrading = False
 
-    async def auth(self, secret: str) -> Union[
-        NSQResponseSchema, NSQErrorSchema
-    ]:
+    async def auth(self, secret: str) -> Union[NSQResponseSchema, NSQErrorSchema]:
         """If the ``IDENTIFY`` response indicates ``auth_required=true``
         the client must send ``AUTH`` before any ``SUB``, ``PUB`` or ``MPUB``
         commands. If auth_required is not present (or ``false``),
@@ -322,9 +331,7 @@ class NSQConnection(NSQConnectionBase):
             self._secret = secret
         return response
 
-    async def sub(self, topic, channel) -> Union[
-        NSQResponseSchema, NSQErrorSchema
-    ]:
+    async def sub(self, topic, channel) -> Union[NSQResponseSchema, NSQErrorSchema]:
         """Subscribe to the topic and channel"""
         validate_topic_channel_name(topic)
         validate_topic_channel_name(channel)
@@ -335,38 +342,31 @@ class NSQConnection(NSQConnectionBase):
             self._is_subscribed = True
         return response
 
-    async def pub(self, topic, message) -> Union[
-        NSQResponseSchema, NSQErrorSchema
-    ]:
+    async def pub(self, topic, message) -> Union[NSQResponseSchema, NSQErrorSchema]:
         """Publish a message to a topic"""
         validate_topic_channel_name(topic)
-        return await self.execute(
-            NSQCommands.PUB, topic, data=message)
+        return await self.execute(NSQCommands.PUB, topic, data=message)
 
-    async def dpub(self, topic, message, delay_time) -> Union[
-        NSQResponseSchema, NSQErrorSchema
-    ]:
+    async def dpub(
+        self, topic, message, delay_time
+    ) -> Union[NSQResponseSchema, NSQErrorSchema]:
         """Publish a deferred message to a topic"""
         validate_topic_channel_name(topic)
-        return await self.execute(
-            NSQCommands.DPUB, topic, delay_time, data=message)
+        return await self.execute(NSQCommands.DPUB, topic, delay_time, data=message)
 
-    async def mpub(self, topic, *messages) -> Union[
-        NSQResponseSchema, NSQErrorSchema
-    ]:
+    async def mpub(self, topic, *messages) -> Union[NSQResponseSchema, NSQErrorSchema]:
         """Publish multiple messages to a topic"""
         validate_topic_channel_name(topic)
         return await self.execute(
-            NSQCommands.MPUB, topic,
-            data=messages if len(messages) > 1 else messages[0]
+            NSQCommands.MPUB, topic, data=messages if len(messages) > 1 else messages[0]
         )
 
     async def rdy(self, messages_count: int = 1):
         """Update RDY state (indicate you are ready to receive N messages)"""
-        assert isinstance(messages_count, int), (
-            'Argument messages_count should be positive integer')
-        assert messages_count >= 0, (
-            'Argument messages_count should be positive integer')
+        assert isinstance(
+            messages_count, int
+        ), "Argument messages_count should be positive integer"
+        assert messages_count >= 0, "Argument messages_count should be positive integer"
 
         self.rdy_messages_count = messages_count
         await self.execute(NSQCommands.RDY, messages_count)
@@ -396,8 +396,7 @@ class NSQConnection(NSQConnectionBase):
     async def _cls(self) -> Union[NSQResponseSchema, NSQErrorSchema]:
         return await self.execute(NSQCommands.CLS)
 
-    async def subscribe(
-            self, topic: str, channel: str, messages_count: int = 1):
+    async def subscribe(self, topic: str, channel: str, messages_count: int = 1):
         """Shortcut for ``sub()`` and ``rdy()`` methods"""
         sub_response = await self.sub(topic, channel)
         if not sub_response:
@@ -407,8 +406,7 @@ class NSQConnection(NSQConnectionBase):
 
     async def messages(self) -> Generator[NSQMessage, None, None]:
         """Generator, yields messages"""
-        assert self.is_subscribed, (
-            'You should subscribe to the topic first')
+        assert self.is_subscribed, "You should subscribe to the topic first"
 
         while self.is_subscribed:
             message = await self._message_queue.get()
@@ -438,22 +436,41 @@ class NSQConnection(NSQConnectionBase):
 
 
 async def open_connection(
-        host: str = 'localhost', port: int = 4150, *,
-        message_queue: asyncio.Queue = None, on_message: Callable = None,
-        on_exception: Callable = None, loop: AbstractEventLoop = None,
-        auto_reconnect: bool = True, heartbeat_interval: int = 30000,
-        feature_negotiation: bool = True, tls_v1: bool = False,
-        snappy: bool = False, deflate: bool = False,
-        deflate_level: int = 6, sample_rate: int = 0,
-        debug: bool = False, logger: logging.Logger = None
+    host: str = "localhost",
+    port: int = 4150,
+    *,
+    message_queue: asyncio.Queue = None,
+    on_message: Callable = None,
+    on_exception: Callable = None,
+    loop: AbstractEventLoop = None,
+    auto_reconnect: bool = True,
+    heartbeat_interval: int = 30000,
+    feature_negotiation: bool = True,
+    tls_v1: bool = False,
+    snappy: bool = False,
+    deflate: bool = False,
+    deflate_level: int = 6,
+    sample_rate: int = 0,
+    debug: bool = False,
+    logger: logging.Logger = None
 ) -> NSQConnection:
     nsq = NSQConnection(
-        host, port, message_queue=message_queue, on_message=on_message,
-        on_exception=on_exception, loop=loop, auto_reconnect=auto_reconnect,
+        host,
+        port,
+        message_queue=message_queue,
+        on_message=on_message,
+        on_exception=on_exception,
+        loop=loop,
+        auto_reconnect=auto_reconnect,
         heartbeat_interval=heartbeat_interval,
-        feature_negotiation=feature_negotiation, tls_v1=tls_v1,
-        snappy=snappy, deflate=deflate, deflate_level=deflate_level,
-        sample_rate=sample_rate, debug=debug, logger=logger
+        feature_negotiation=feature_negotiation,
+        tls_v1=tls_v1,
+        snappy=snappy,
+        deflate=deflate,
+        deflate_level=deflate_level,
+        sample_rate=sample_rate,
+        debug=debug,
+        logger=logger,
     )
     await nsq.connect()
     await nsq.identify()

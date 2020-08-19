@@ -1,4 +1,5 @@
 import pytest
+
 from ansq import open_connection
 
 

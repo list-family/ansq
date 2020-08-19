@@ -2,6 +2,7 @@ import asyncio
 from time import time
 
 import pytest
+
 from ansq import open_connection
 from ansq.tcp.types import NSQMessage
 
@@ -13,11 +14,10 @@ async def test_read_message():
 
     timestamp = time()
 
-    response = await nsq.pub(
-        'test_read_message', 'hello sent at {}'.format(timestamp))
+    response = await nsq.pub("test_read_message", "hello sent at {}".format(timestamp))
     assert response.is_ok
 
-    response = await nsq.sub('test_read_message', 'channel1')
+    response = await nsq.sub("test_read_message", "channel1")
     assert response.is_ok
 
     await nsq.rdy(1)
@@ -39,10 +39,11 @@ async def test_read_message_and_req():
     timestamp = time()
 
     response = await nsq.pub(
-        'test_read_message_and_req', 'hello sent at {}'.format(timestamp))
+        "test_read_message_and_req", "hello sent at {}".format(timestamp)
+    )
     assert response.is_ok
 
-    response = await nsq.sub('test_read_message_and_req', 'channel1')
+    response = await nsq.sub("test_read_message_and_req", "channel1")
     assert response.is_ok
 
     await nsq.rdy(1)
@@ -64,10 +65,11 @@ async def test_read_message_and_touch():
     timestamp = time()
 
     response = await nsq.pub(
-        'test_read_message_and_touch', 'hello sent at {}'.format(timestamp))
+        "test_read_message_and_touch", "hello sent at {}".format(timestamp)
+    )
     assert response.is_ok
 
-    response = await nsq.sub('test_read_message_and_touch', 'channel1')
+    response = await nsq.sub("test_read_message_and_touch", "channel1")
     assert response.is_ok
 
     await nsq.rdy(1)
@@ -92,12 +94,11 @@ async def test_read_message_and_fin_twice():
     timestamp = time()
 
     response = await nsq.pub(
-        'test_read_message_and_fin_twice',
-        'hello sent at {}'.format(timestamp)
+        "test_read_message_and_fin_twice", "hello sent at {}".format(timestamp)
     )
     assert response.is_ok
 
-    response = await nsq.sub('test_read_message_and_fin_twice', 'channel1')
+    response = await nsq.sub("test_read_message_and_fin_twice", "channel1")
     assert response.is_ok
 
     await nsq.rdy(1)
@@ -107,7 +108,7 @@ async def test_read_message_and_fin_twice():
 
     with pytest.raises(RuntimeWarning) as warning:
         await message.fin()
-    assert str(warning.value) == 'Message has already been processed'
+    assert str(warning.value) == "Message has already been processed"
 
     await nsq.close()
     assert nsq.is_closed
@@ -118,11 +119,10 @@ async def test_read_messages_via_generator():
     nsq = await open_connection()
     assert nsq.status.is_connected
 
-    response = await nsq.pub(
-        'test_read_messages_via_generator', 'test_message')
+    response = await nsq.pub("test_read_messages_via_generator", "test_message")
     assert response.is_ok
 
-    await nsq.subscribe('test_read_messages_via_generator', 'channel1')
+    await nsq.subscribe("test_read_messages_via_generator", "channel1")
     assert nsq.is_subscribed
 
     processed_messages = 0
@@ -146,11 +146,10 @@ async def test_read_single_message_via_get_message():
     nsq = await open_connection()
     assert nsq.status.is_connected
 
-    response = await nsq.pub(
-        'test_read_single_message_via_get_message', 'test_message')
+    response = await nsq.pub("test_read_single_message_via_get_message", "test_message")
     assert response.is_ok
 
-    await nsq.subscribe('test_read_single_message_via_get_message', 'channel1')
+    await nsq.subscribe("test_read_single_message_via_get_message", "channel1")
     assert nsq.is_subscribed
 
     message = None
@@ -175,18 +174,17 @@ async def test_read_bytes_message():
     nsq = await open_connection()
     assert nsq.status.is_connected
 
-    response = await nsq.pub(
-        'test_read_bytes_message', b'\xa1')
+    response = await nsq.pub("test_read_bytes_message", b"\xa1")
     assert response.is_ok
 
-    response = await nsq.sub('test_read_bytes_message', 'channel1')
+    response = await nsq.sub("test_read_bytes_message", "channel1")
     assert response.is_ok
 
     await nsq.rdy(1)
     message = await nsq.message_queue.get()
     assert not message.is_processed
 
-    assert message.body == b'\xa1'
+    assert message.body == b"\xa1"
     with pytest.raises(UnicodeDecodeError):
         str(message)
 

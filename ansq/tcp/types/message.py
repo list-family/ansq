@@ -2,12 +2,12 @@ from functools import wraps
 from time import time
 from typing import TYPE_CHECKING
 
-
 if TYPE_CHECKING:
     from ansq.tcp.connection import NSQConnection
+
     from . import NSQMessageSchema
 
-__all__ = 'NSQMessage'
+__all__ = "NSQMessage"
 
 
 def not_processed(func):
@@ -15,20 +15,25 @@ def not_processed(func):
 
     :raises RuntimeWarning: in case message was processed earlier.
     """
+
     @wraps(func)
-    async def decorator(cls: 'NSQMessage', *args, **kwargs):
+    async def decorator(cls: "NSQMessage", *args, **kwargs):
         if cls.is_processed:
-            raise RuntimeWarning('Message has already been processed')
+            raise RuntimeWarning("Message has already been processed")
         response = await func(cls, *args, **kwargs)
         return response
+
     return decorator
 
 
 class NSQMessage:
     def __init__(
-            self, message_schema: 'NSQMessageSchema',
-            connection: 'NSQConnection',
-            timeout: int = 60000, is_processed: bool = False):
+        self,
+        message_schema: "NSQMessageSchema",
+        connection: "NSQConnection",
+        timeout: int = 60000,
+        is_processed: bool = False,
+    ):
         self.timestamp = message_schema.timestamp
         self.attempts = message_schema.attempts
         self.body = message_schema.body
@@ -42,13 +47,17 @@ class NSQMessage:
     def __repr__(self):
         return (
             '<NSQMessage id="{id}", body={body}, attempts={attempts}, '
-            'timestamp={timestamp}, timeout={timeout}, '
-            'initialized_at={initialized_at}, is_timed_out={is_timed_out}, '
-            'is_processed={is_processed}>'.format(
-                id=self.id, body=self.body, attempts=self.attempts,
-                timestamp=self.timestamp, timeout=self.timeout,
+            "timestamp={timestamp}, timeout={timeout}, "
+            "initialized_at={initialized_at}, is_timed_out={is_timed_out}, "
+            "is_processed={is_processed}>".format(
+                id=self.id,
+                body=self.body,
+                attempts=self.attempts,
+                timestamp=self.timestamp,
+                timeout=self.timeout,
                 initialized_at=self._initialized_at,
-                is_timed_out=self.is_timed_out, is_processed=self.is_processed
+                is_timed_out=self.is_timed_out,
+                is_processed=self.is_processed,
             )
         )
 
@@ -58,7 +67,7 @@ class NSQMessage:
         :raises UnicodeDecodeError: Trying to decode bytes like ``b'\xa1'``.
             Be careful. Call this method only if you sure that the body is str.
         """
-        return self.body.decode('utf-8')
+        return self.body.decode("utf-8")
 
     @property
     def is_processed(self) -> bool:

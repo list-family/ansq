@@ -21,15 +21,18 @@ class TransportError(NSQHTTPException):
         return self.args[2]
 
     def __str__(self):
-        return 'TransportError(%s, %r)' % (self.status_code, self.error)
+        return "TransportError(%s, %r)" % (self.status_code, self.error)
 
 
 class HTTPConnectionError(TransportError):
     """XXX"""
 
     def __str__(self):
-        return 'HttpConnectionError(%s) caused by: %s(%s)' % (
-            self.error, self.info.__class__.__name__, self.info)
+        return "HttpConnectionError(%s) caused by: %s(%s)" % (
+            self.error,
+            self.info.__class__.__name__,
+            self.info,
+        )
 
 
 class NotFoundError(TransportError):

@@ -1,10 +1,11 @@
 from typing import Union
 
-from . import NSQCommands, FrameType
+from . import FrameType, NSQCommands
 
 
 class NSQResponseSchema:
     """NSQ Response schema"""
+
     body: bytes
     frame_type: FrameType
 
@@ -17,8 +18,9 @@ class NSQResponseSchema:
         )
 
     def __repr__(self):
-        return '<NSQResponseSchema frame_type:{}, body:{}, is_ok:{}>'.format(
-            self.frame_type, self.body, self.is_ok)
+        return "<NSQResponseSchema frame_type:{}, body:{}, is_ok:{}>".format(
+            self.frame_type, self.body, self.is_ok
+        )
 
     def __bool__(self):
         return True
@@ -29,7 +31,7 @@ class NSQResponseSchema:
 
     @property
     def is_heartbeat(self) -> bool:
-        return self.body == b'_heartbeat_'
+        return self.body == b"_heartbeat_"
 
     @property
     def is_message(self) -> bool:
@@ -46,41 +48,44 @@ class NSQResponseSchema:
 
 class NSQMessageSchema(NSQResponseSchema):
     """NSQ Message schema"""
+
     timestamp: int = None
     attempts: int = None
     id: str = None
 
     def __init__(
-            self, timestamp: int, attempts: int, id_: bytes, body: bytes,
-            frame_type: Union[FrameType, int]):
+        self,
+        timestamp: int,
+        attempts: int,
+        id_: bytes,
+        body: bytes,
+        frame_type: Union[FrameType, int],
+    ):
         super().__init__(body, frame_type)
         self.timestamp = timestamp
         self.attempts = attempts
-        self.id = id_.decode('utf-8')
+        self.id = id_.decode("utf-8")
 
     def __repr__(self):
         return (
-            '<NSQMessageSchema frame_type:{}, body:{}, timestamp:{}, '
-            'attempts:{}, id:{}>'
-        ).format(
-            self.frame_type, self.body, self.timestamp, self.attempts,
-            self.id
-        )
+            "<NSQMessageSchema frame_type:{}, body:{}, timestamp:{}, "
+            "attempts:{}, id:{}>"
+        ).format(self.frame_type, self.body, self.timestamp, self.attempts, self.id)
 
 
 class NSQErrorSchema(NSQResponseSchema):
     """NSQ Error"""
+
     code: str
 
-    def __init__(
-            self, code: bytes, body: bytes,
-            frame_type: Union[FrameType, int]):
+    def __init__(self, code: bytes, body: bytes, frame_type: Union[FrameType, int]):
         super().__init__(body, frame_type)
-        self.code = code.decode('utf-8')
+        self.code = code.decode("utf-8")
 
     def __repr__(self):
-        return '<NSQErrorSchema frame_type:{}, body:{}, code:{}>'.format(
-            self.frame_type, self.body, self.code)
+        return "<NSQErrorSchema frame_type:{}, body:{}, code:{}>".format(
+            self.frame_type, self.body, self.code
+        )
 
     def __bool__(self):
         return False
