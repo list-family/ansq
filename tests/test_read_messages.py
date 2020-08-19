@@ -63,7 +63,7 @@ async def test_read_message_and_touch():
     timestamp = time()
 
     response = await nsq.pub(
-        "test_read_message_and_touch", f"hello sent at {timestamp}"
+        "test_read_message_and_touch", f"hello sent at {timestamp}",
     )
     assert response.is_ok
 
@@ -92,7 +92,7 @@ async def test_read_message_and_fin_twice():
     timestamp = time()
 
     response = await nsq.pub(
-        "test_read_message_and_fin_twice", f"hello sent at {timestamp}"
+        "test_read_message_and_fin_twice", f"hello sent at {timestamp}",
     )
     assert response.is_ok
 

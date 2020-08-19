@@ -1,7 +1,7 @@
 # ansq - Async NSQ
 [![PyPI version](https://badge.fury.io/py/ansq.svg)](https://badge.fury.io/py/ansq)
 ![Tests](https://github.com/list-family/ansq/workflows/Test/badge.svg)
-[![Coverage](https://codecov.io/gh/list-family/ansq/branch/master/graph/badge.svg)](https://codecov.io/gh/list-family/ansq)  
+[![Coverage](https://codecov.io/gh/list-family/ansq/branch/master/graph/badge.svg)](https://codecov.io/gh/list-family/ansq)<br />
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/ansq)
 
 Written with native Asyncio NSQ package
@@ -9,7 +9,7 @@ Written with native Asyncio NSQ package
 ## Features
 * Full TCP wrapper
 * One connection for writer and reader
-* Self-healing: when the NSQ connection is lost, reconnects, sends identify 
+* Self-healing: when the NSQ connection is lost, reconnects, sends identify
     and auth commands, subscribes to previous topic/channel
 * Many helper-methods in each class
 
@@ -58,15 +58,15 @@ async def main():
 
     single_message = await nsq.wait_for_message()
     print('Single message: ' + str(single_message))
-    # message.body is bytes, 
+    # message.body is bytes,
     # __str__ method decodes bytes
     # Prints decoded message.body
 
     # Also it has real good repr
     print(repr(single_message))
-    # <NSQMessage id="0d406ce4661af003", body=b'e', attempts=1, 
-    #     timestamp=1590162134305413767, timeout=60000, 
-    #     initialized_at=1590162194.8242455, is_timed_out=False, 
+    # <NSQMessage id="0d406ce4661af003", body=b'e', attempts=1,
+    #     timestamp=1590162134305413767, timeout=60000,
+    #     initialized_at=1590162194.8242455, is_timed_out=False,
     #     is_processed=False>
 
     # Very long task
@@ -102,7 +102,7 @@ async def main(nsq: NSQConnection):
     while True:
         async for message in nsq.messages():
             print('Message: ' + str(message))
-            # message.body is bytes, 
+            # message.body is bytes,
             # __str__ method decodes bytes
             #
             # Something do with messages...

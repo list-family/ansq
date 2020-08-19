@@ -80,7 +80,7 @@ class Reader(BaseReader):
             return resp
 
     def _parse_payload(
-        self, frame_type: FrameType, payload_size: int
+        self, frame_type: FrameType, payload_size: int,
     ) -> Union[NSQResponseSchema, NSQErrorSchema, NSQMessageSchema]:
         """Parse from buffer NSQ response
 
@@ -90,15 +90,15 @@ class Reader(BaseReader):
         """
         if frame_type == FrameType.RESPONSE:
             return NSQResponseSchema(
-                self._unpack_response(payload_size), frame_type=frame_type
+                self._unpack_response(payload_size), frame_type=frame_type,
             )
         if frame_type == FrameType.ERROR:
             return NSQErrorSchema(
-                *self._unpack_error(payload_size), frame_type=frame_type
+                *self._unpack_error(payload_size), frame_type=frame_type,
             )
         if frame_type == FrameType.MESSAGE:
             return NSQMessageSchema(
-                *self._unpack_message(payload_size), frame_type=frame_type
+                *self._unpack_message(payload_size), frame_type=frame_type,
             )
 
         raise ProtocolError(f"Got unexpected FrameType: {frame_type}")

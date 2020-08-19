@@ -50,7 +50,7 @@ class TCPConnection(abc.ABC):
         self._loop: AbstractEventLoop = loop or asyncio.get_event_loop()
         self._debug = debug
         self.logger = logger or get_logger(
-            debug, f"{self._host}:{self._port}.{self.instance_number}"
+            debug, f"{self._host}:{self._port}.{self.instance_number}",
         )
 
         self._message_queue: asyncio.Queue[
