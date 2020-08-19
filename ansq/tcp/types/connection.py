@@ -37,7 +37,7 @@ class TCPConnection(abc.ABC):
         deflate_level: int = 6,
         sample_rate: int = 0,
         debug: bool = False,
-        logger: logging.Logger = None
+        logger: logging.Logger = None,
     ):
         from ansq.tcp.protocol import Reader
         from ansq.tcp.types import ConnectionStatus
@@ -50,7 +50,7 @@ class TCPConnection(abc.ABC):
         self._loop: AbstractEventLoop = loop or asyncio.get_event_loop()
         self._debug = debug
         self.logger = logger or get_logger(
-            debug, "{}:{}.{}".format(self._host, self._port, self.instance_number)
+            debug, f"{self._host}:{self._port}.{self.instance_number}"
         )
 
         self._message_queue: asyncio.Queue[
@@ -109,7 +109,7 @@ class TCPConnection(abc.ABC):
 
     @property
     def endpoint(self) -> str:
-        return "tcp://{}:{}".format(self._host, self._port)
+        return f"tcp://{self._host}:{self._port}"
 
     @property
     def in_flight(self) -> int:
@@ -174,7 +174,7 @@ class TCPConnection(abc.ABC):
         command: Union[str, bytes],
         *args,
         data: Any = None,
-        callback: Callable = None
+        callback: Callable = None,
     ) -> Optional[Union["NSQResponseSchema", "NSQErrorSchema", "NSQMessageSchema"]]:
         raise NotImplementedError()
 

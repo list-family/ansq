@@ -101,7 +101,7 @@ class Reader(BaseReader):
                 *self._unpack_message(payload_size), frame_type=frame_type
             )
 
-        raise ProtocolError("Got unexpected FrameType: {}".format(frame_type))
+        raise ProtocolError(f"Got unexpected FrameType: {frame_type}")
 
     def _unpack_response(self, payload_size: int) -> bytes:
         """Unpack the response from the buffer"""
@@ -125,7 +125,7 @@ class Reader(BaseReader):
         start = consts.HEADER_SIZE
         end = consts.DATA_SIZE + payload_size
         msg_len = end - start - consts.MSG_HEADER
-        fmt = ">qh16s{}s".format(msg_len)
+        fmt = f">qh16s{msg_len}s"
         return struct.unpack(fmt, self._buffer[start:end])
 
     def encode_command(self, cmd: str, *args, data: Any = None) -> bytes:

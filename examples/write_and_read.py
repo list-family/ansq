@@ -15,7 +15,7 @@ async def main():
     await nsq.subscribe("test_topic", "channel1", 2)
     processed_messages = 0
     async for message in nsq.messages():
-        print("Message #{}: {}".format(processed_messages, message))
+        print(f"Message #{processed_messages}: {message}")
         # Message #0: test_message
         # Message #1: t
         # Message #2: e

@@ -126,6 +126,4 @@ ERROR_CODES = {
 
 
 def get_exception(code, error_message):
-    return ERROR_CODES.get(code, NSQErrorCode)(
-        "{code}: {error_message}".format(code=code, error_message=error_message)
-    )
+    return ERROR_CODES.get(code, NSQErrorCode)(f"{code}: {error_message}")
