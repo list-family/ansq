@@ -6,12 +6,14 @@ from asyncio.streams import StreamReader, StreamWriter
 from collections import deque
 from typing import TYPE_CHECKING, Any, Callable, Optional, Union
 
-from ansq.tcp.protocol import Reader
-from ansq.tcp.types import ConnectionStatus, NSQCommands, NSQMessage
-from ansq.utils import get_logger
-
 if TYPE_CHECKING:
-    from ansq.tcp.types import NSQErrorSchema, NSQMessageSchema, NSQResponseSchema
+    from ansq.tcp.types import (
+        ConnectionStatus,
+        NSQErrorSchema,
+        NSQMessage,
+        NSQMessageSchema,
+        NSQResponseSchema,
+    )
 
 
 class TCPConnection(abc.ABC):
@@ -37,6 +39,10 @@ class TCPConnection(abc.ABC):
         debug: bool = False,
         logger: logging.Logger = None
     ):
+        from ansq.tcp.protocol import Reader
+        from ansq.tcp.types import ConnectionStatus
+        from ansq.utils import get_logger
+
         self.instance_number = self.__class__.instances_count
         self.__class__.instances_count += 1
 
@@ -48,7 +54,7 @@ class TCPConnection(abc.ABC):
         )
 
         self._message_queue: asyncio.Queue[
-            Optional[NSQMessage]
+            Optional["NSQMessage"]
         ] = message_queue or asyncio.Queue()
         self._status: ConnectionStatus = ConnectionStatus.INIT
         self._reader: Optional[StreamReader] = None
@@ -56,6 +62,7 @@ class TCPConnection(abc.ABC):
         self._reader_task: Optional[asyncio.Task] = None
         self._reconnect_task: Optional[asyncio.Future] = None
         self._auto_reconnect = auto_reconnect
+
         self._parser = Reader()
 
         self._config = {
@@ -97,7 +104,7 @@ class TCPConnection(abc.ABC):
         )
 
     @property
-    def status(self) -> ConnectionStatus:
+    def status(self) -> "ConnectionStatus":
         return self._status
 
     @property
@@ -176,6 +183,8 @@ class TCPConnection(abc.ABC):
         raise NotImplementedError()
 
     async def _pulse(self) -> None:
+        from ansq.tcp.types import NSQCommands
+
         await self.execute(NSQCommands.NOP)
 
     @abc.abstractmethod
