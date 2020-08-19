@@ -1,20 +1,21 @@
 import asyncio
+
 from ansq import open_connection
 
 
 async def main():
     nsq = await open_connection()
-    print(await nsq.pub('test_topic', 'test_message'))
+    print(await nsq.pub("test_topic", "test_message"))
     # <NSQResponseSchema frame_type:FrameType.RESPONSE, body:b'OK', is_ok:True>
-    print(await nsq.dpub('test_topic', 'test_message', 3))
+    print(await nsq.dpub("test_topic", "test_message", 3))
     # <NSQResponseSchema frame_type:FrameType.RESPONSE, body:b'OK', is_ok:True>
-    print(await nsq.mpub('test_topic', list('test_message')))
+    print(await nsq.mpub("test_topic", list("test_message")))
     # <NSQResponseSchema frame_type:FrameType.RESPONSE, body:b'OK', is_ok:True>
 
-    await nsq.subscribe('test_topic', 'channel1', 2)
+    await nsq.subscribe("test_topic", "channel1", 2)
     processed_messages = 0
     async for message in nsq.messages():
-        print('Message #{}: {}'.format(processed_messages, message))
+        print("Message #{}: {}".format(processed_messages, message))
         # Message #0: test_message
         # Message #1: t
         # Message #2: e
@@ -29,7 +30,7 @@ async def main():
             break
 
     single_message = await nsq.wait_for_message()
-    print('Single message: ' + str(single_message))
+    print("Single message: " + str(single_message))
     # message.body is bytes,
     # __str__ method decodes bytes
     # Prints decoded message.body
@@ -56,6 +57,6 @@ async def main():
     await nsq.close()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     loop = asyncio.get_event_loop()
     loop.run_until_complete(main())

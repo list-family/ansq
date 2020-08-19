@@ -1,4 +1,4 @@
-NL = b'\n'
+NL = b"\n"
 DATA_SIZE = 4
 FRAME_SIZE = 4
 HEADER_SIZE = DATA_SIZE + FRAME_SIZE

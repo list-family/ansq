@@ -9,11 +9,14 @@ from typing import Any, Optional, Tuple, Union
 from ansq.tcp import consts
 from ansq.tcp.exceptions import ProtocolError
 from ansq.tcp.types import (
-    FrameType, NSQResponseSchema, NSQMessageSchema, NSQErrorSchema
+    FrameType,
+    NSQErrorSchema,
+    NSQMessageSchema,
+    NSQResponseSchema,
 )
 from ansq.utils import convert_to_bytes
 
-__all__ = 'Reader'
+__all__ = "Reader"
 
 
 class BaseReader(metaclass=abc.ABCMeta):
@@ -49,9 +52,9 @@ class Reader(BaseReader):
         """
         chunk and self._buffer.extend(chunk)
 
-    def get(self) -> Optional[
-        Union[NSQResponseSchema, NSQErrorSchema, NSQMessageSchema]
-    ]:
+    def get(
+        self,
+    ) -> Optional[Union[NSQResponseSchema, NSQErrorSchema, NSQMessageSchema]]:
         """Get from buffer NSQ response
 
         :raises ProtocolError: On unexpected NSQ message's FrameType
@@ -61,27 +64,23 @@ class Reader(BaseReader):
         buffer_size = len(self._buffer)
 
         if not self._is_header and buffer_size >= consts.DATA_SIZE:
-            size = struct.unpack('>l', self._buffer[:consts.DATA_SIZE])[0]
+            size = struct.unpack(">l", self._buffer[: consts.DATA_SIZE])[0]
             self._payload_size = size
             self._is_header = True
 
-        if (
-                self._is_header
-                and buffer_size >= consts.DATA_SIZE + self._payload_size
-        ):
+        if self._is_header and buffer_size >= consts.DATA_SIZE + self._payload_size:
             start, end = consts.DATA_SIZE, consts.HEADER_SIZE
-            frame_type = FrameType(
-                struct.unpack('>l', self._buffer[start:end])[0])
+            frame_type = FrameType(struct.unpack(">l", self._buffer[start:end])[0])
             resp = self._parse_payload(frame_type, self._payload_size)
 
-            self._buffer = self._buffer[start + self._payload_size:]
+            self._buffer = self._buffer[start + self._payload_size :]
             self._is_header = False
             self._payload_size = 0
 
             return resp
 
     def _parse_payload(
-            self, frame_type: FrameType, payload_size: int
+        self, frame_type: FrameType, payload_size: int
     ) -> Union[NSQResponseSchema, NSQErrorSchema, NSQMessageSchema]:
         """Parse from buffer NSQ response
 
@@ -91,15 +90,18 @@ class Reader(BaseReader):
         """
         if frame_type == FrameType.RESPONSE:
             return NSQResponseSchema(
-                self._unpack_response(payload_size), frame_type=frame_type)
+                self._unpack_response(payload_size), frame_type=frame_type
+            )
         if frame_type == FrameType.ERROR:
             return NSQErrorSchema(
-                *self._unpack_error(payload_size), frame_type=frame_type)
+                *self._unpack_error(payload_size), frame_type=frame_type
+            )
         if frame_type == FrameType.MESSAGE:
             return NSQMessageSchema(
-                *self._unpack_message(payload_size), frame_type=frame_type)
+                *self._unpack_message(payload_size), frame_type=frame_type
+            )
 
-        raise ProtocolError('Got unexpected FrameType: {}'.format(frame_type))
+        raise ProtocolError("Got unexpected FrameType: {}".format(frame_type))
 
     def _unpack_response(self, payload_size: int) -> bytes:
         """Unpack the response from the buffer"""
@@ -113,8 +115,7 @@ class Reader(BaseReader):
         code, msg = error.split(maxsplit=1)
         return code, msg
 
-    def _unpack_message(self, payload_size: int) -> Tuple[
-            int, int, bytes, bytes]:
+    def _unpack_message(self, payload_size: int) -> Tuple[int, int, bytes, bytes]:
         """Unpack the message from the buffer.
 
         :see: https://docs.python.org/3/library/struct.html
@@ -124,30 +125,30 @@ class Reader(BaseReader):
         start = consts.HEADER_SIZE
         end = consts.DATA_SIZE + payload_size
         msg_len = end - start - consts.MSG_HEADER
-        fmt = '>qh16s{}s'.format(msg_len)
+        fmt = ">qh16s{}s".format(msg_len)
         return struct.unpack(fmt, self._buffer[start:end])
 
     def encode_command(self, cmd: str, *args, data: Any = None) -> bytes:
         """Encode command to bytes"""
         _cmd = convert_to_bytes(cmd.upper().strip())
         _args = [convert_to_bytes(a) for a in args]
-        body_data, params_data = b'', b''
+        body_data, params_data = b"", b""
 
         if len(_args):
-            params_data = b' ' + b' '.join(_args)
+            params_data = b" " + b" ".join(_args)
 
         if data and isinstance(data, (list, tuple)):
             data_encoded = [self._encode_body(part) for part in data]
             num_parts = len(data_encoded)
-            payload = struct.pack('>l', num_parts) + b''.join(data_encoded)
-            body_data = struct.pack('>l', len(payload)) + payload
+            payload = struct.pack(">l", num_parts) + b"".join(data_encoded)
+            body_data = struct.pack(">l", len(payload)) + payload
         elif data:
             body_data = self._encode_body(data)
 
-        return b''.join((_cmd, params_data, consts.NL, body_data))
+        return b"".join((_cmd, params_data, consts.NL, body_data))
 
     @staticmethod
     def _encode_body(data: Any) -> bytes:
         _data = convert_to_bytes(data)
-        result = struct.pack('>l', len(_data)) + _data
+        result = struct.pack(">l", len(_data)) + _data
         return result

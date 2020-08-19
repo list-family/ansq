@@ -28,31 +28,37 @@ class NSQErrorCode(NSQException):
 
 class NSQInvalid(NSQErrorCode):
     """E_INVALID"""
+
     pass
 
 
 class NSQBadBody(NSQErrorCode):
     """E_BAD_BODY"""
+
     pass
 
 
 class NSQBadTopic(NSQErrorCode):
     """E_BAD_TOPIC"""
+
     pass
 
 
 class NSQBadChannel(NSQErrorCode):
     """E_BAD_CHANNEL"""
+
     pass
 
 
 class NSQBadMessage(NSQErrorCode):
     """E_BAD_MESSAGE"""
+
     pass
 
 
 class NSQPutFailed(NSQErrorCode):
     """E_PUT_FAILED"""
+
     pass
 
 
@@ -78,36 +84,39 @@ class NSQUnauthorized(NSQErrorCode):
 
 class NSQFinishFailed(NSQErrorCode):
     """E_FIN_FAILED"""
+
     fatal = False
 
 
 class NSQRequeueFailed(NSQErrorCode):
     """E_REQ_FAILED"""
+
     fatal = False
 
 
 class NSQTouchFailed(NSQErrorCode):
     """E_TOUCH_FAILED"""
+
     fatal = False
 
 
 ERROR_CODES = {
-    'E_INVALID': NSQInvalid,
-    'E_BAD_BODY': NSQBadBody,
-    'E_BAD_TOPIC': NSQBadTopic,
-    'E_BAD_CHANNEL': NSQBadChannel,
-    'E_BAD_MESSAGE': NSQBadMessage,
-    'E_PUT_FAILED': NSQPutFailed,
-    'E_PUB_FAILED': NSQPubFailed,
-    'E_MPUB_FAILED': NSQMPubFailed,
-    'E_FINISH_FAILED': NSQFinishFailed,
-    'E_AUTH_DISABLED': NSQAuthDisabled,
-    'E_AUTH_FAILED': NSQAuthFailed,
-    'E_UNAUTHORIZED': NSQUnauthorized,
-    'E_FIN_FAILED': NSQFinishFailed,
-    'E_REQUEUE_FAILED': NSQRequeueFailed,
-    'E_REQ_FAILED': NSQRequeueFailed,
-    'E_TOUCH_FAILED': NSQTouchFailed
+    "E_INVALID": NSQInvalid,
+    "E_BAD_BODY": NSQBadBody,
+    "E_BAD_TOPIC": NSQBadTopic,
+    "E_BAD_CHANNEL": NSQBadChannel,
+    "E_BAD_MESSAGE": NSQBadMessage,
+    "E_PUT_FAILED": NSQPutFailed,
+    "E_PUB_FAILED": NSQPubFailed,
+    "E_MPUB_FAILED": NSQMPubFailed,
+    "E_FINISH_FAILED": NSQFinishFailed,
+    "E_AUTH_DISABLED": NSQAuthDisabled,
+    "E_AUTH_FAILED": NSQAuthFailed,
+    "E_UNAUTHORIZED": NSQUnauthorized,
+    "E_FIN_FAILED": NSQFinishFailed,
+    "E_REQUEUE_FAILED": NSQRequeueFailed,
+    "E_REQ_FAILED": NSQRequeueFailed,
+    "E_TOUCH_FAILED": NSQTouchFailed,
 }
 
 # https://groups.google.com/forum/#!msg/nsq-users/VSxdPtw2ZmY/kmQJJhZe4wEJ
@@ -118,7 +127,5 @@ ERROR_CODES = {
 
 def get_exception(code, error_message):
     return ERROR_CODES.get(code, NSQErrorCode)(
-        '{code}: {error_message}'.format(
-            code=code, error_message=error_message
-        )
+        "{code}: {error_message}".format(code=code, error_message=error_message)
     )

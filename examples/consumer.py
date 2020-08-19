@@ -1,13 +1,14 @@
 import asyncio
+
 from ansq import open_connection
 from ansq.tcp.connection import NSQConnection
 
 
 async def main(nsq: NSQConnection):
-    await nsq.subscribe('test_topic', 'channel1', 2)
+    await nsq.subscribe("test_topic", "channel1", 2)
     while True:
         async for message in nsq.messages():
-            print('Message: ' + str(message))
+            print("Message: " + str(message))
             # message.body is bytes,
             # __str__ method decodes bytes
             #
@@ -23,7 +24,7 @@ async def main(nsq: NSQConnection):
         #
         # Errors in ansq package are logging with ERROR level,
         # so you can see errors in console.
-        print('Connection status: ' + str(nsq.status))
+        print("Connection status: " + str(nsq.status))
         # Prints one of this:
         # Connection status: ConnectionStatus.CLOSING
         # Connection status: ConnectionStatus.CLOSED
@@ -34,7 +35,7 @@ async def main(nsq: NSQConnection):
         return
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     loop = asyncio.get_event_loop()
     nsq_connection = loop.run_until_complete(open_connection())
 
