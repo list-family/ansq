@@ -19,7 +19,7 @@ class NSQResponseSchema:
 
     def __repr__(self):
         return "<NSQResponseSchema frame_type:{}, body:{}, is_ok:{}>".format(
-            self.frame_type, self.body, self.is_ok
+            self.frame_type, self.body, self.is_ok,
         )
 
     def __bool__(self):
@@ -84,7 +84,7 @@ class NSQErrorSchema(NSQResponseSchema):
 
     def __repr__(self):
         return "<NSQErrorSchema frame_type:{}, body:{}, code:{}>".format(
-            self.frame_type, self.body, self.code
+            self.frame_type, self.body, self.code,
         )
 
     def __bool__(self):

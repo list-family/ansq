@@ -24,7 +24,7 @@ class NSQConnection(NSQConnectionBase):
     async def connect(self) -> bool:
         """Open connection"""
         self._reader, self._writer = await asyncio.open_connection(
-            self._host, self._port
+            self._host, self._port,
         )
 
         self._writer.write(NSQCommands.MAGIC_V2)
@@ -59,7 +59,7 @@ class NSQConnection(NSQConnectionBase):
             await self.identify()
             self._secret and await self.auth(self._secret)
             self._is_subscribed and await self.subscribe(
-                self._topic, self._channel, self.rdy_messages_count
+                self._topic, self._channel, self.rdy_messages_count,
             )
         except Exception as e:
             if raise_error:
@@ -82,8 +82,8 @@ class NSQConnection(NSQConnectionBase):
         if exception:
             self.logger.error(
                 "Connection {} is closing due an error: {}".format(
-                    self.endpoint, exception
-                )
+                    self.endpoint, exception,
+                ),
             )
         else:
             self.logger.debug(f"Connection {self.endpoint} is closing...")
@@ -192,7 +192,7 @@ class NSQConnection(NSQConnectionBase):
         config = json.dumps(self._config)
 
         response = await self.execute(
-            NSQCommands.IDENTIFY, data=config, callback=self._start_upgrading
+            NSQCommands.IDENTIFY, data=config, callback=self._start_upgrading,
         )
 
         if response in (NSQCommands.OK, NSQCommands.OK.decode()):
@@ -247,7 +247,7 @@ class NSQConnection(NSQConnectionBase):
         if self._auto_reconnect:
             await asyncio.sleep(1)
             self._reconnect_task = self._loop.create_task(
-                self.reconnect(raise_error=False)
+                self.reconnect(raise_error=False),
             )
         else:
             await self._do_close(OSError("Lost connection to NSQ"))
@@ -358,13 +358,15 @@ class NSQConnection(NSQConnectionBase):
         """Publish multiple messages to a topic"""
         validate_topic_channel_name(topic)
         return await self.execute(
-            NSQCommands.MPUB, topic, data=messages if len(messages) > 1 else messages[0]
+            NSQCommands.MPUB,
+            topic,
+            data=messages if len(messages) > 1 else messages[0],
         )
 
     async def rdy(self, messages_count: int = 1):
         """Update RDY state (indicate you are ready to receive N messages)"""
         assert isinstance(
-            messages_count, int
+            messages_count, int,
         ), "Argument messages_count should be positive integer"
         assert messages_count >= 0, "Argument messages_count should be positive integer"
 

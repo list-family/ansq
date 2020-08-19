@@ -33,7 +33,7 @@ def validate_topic_channel_name(name: str):
     :raises AssertionError: Value not matches regex.
     """
     assert re.match(
-        r"^[.a-zA-Z0-9_\-]{2,64}(#ephemeral)?$", name
+        r"^[.a-zA-Z0-9_\-]{2,64}(#ephemeral)?$", name,
     ), "Topic name must matches ^[.a-zA-Z0-9_-]{2,64}+(#ephemeral)?$ regex"
 
 
@@ -54,7 +54,7 @@ def convert_to_bytes(value) -> bytes:
     raise TypeError(
         "Argument {} expected to be type of "
         "bytes, bytearray, str, int, float, dict, Decimal, datetime "
-        "or dataclass".format(value)
+        "or dataclass".format(value),
     )
 
 
@@ -82,7 +82,7 @@ def _(value: Union[int, float, Decimal]) -> bytes:
 @convert_to_bytes.register(dict)
 def _(value: dict) -> bytes:
     """Convert ``dict`` to bytes"""
-    return json.dumps(value, cls=JSONEncoder, separators=(",", ":"),).encode("utf-8")
+    return json.dumps(value, cls=JSONEncoder, separators=(",", ":")).encode("utf-8")
 
 
 @convert_to_bytes.register(Enum)
@@ -114,7 +114,7 @@ def convert_to_str(value):
     raise TypeError(
         "Argument {} expected to be type of "
         "bytes, bytearray, str, int, float, dict, Decimal, datetime "
-        "or dataclass".format(value)
+        "or dataclass".format(value),
     )
 
 
