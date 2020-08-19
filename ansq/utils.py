@@ -170,7 +170,7 @@ def get_logger(debug: bool = False, unique_name: str = None):
     :params unique_name: Used to make all loggers unique.
     :type unique_name: :class:`str`
     """
-    logger = logging.getLogger("ansq {}".format(unique_name) if unique_name else "ansq")
+    logger = logging.getLogger(f"ansq {unique_name}" if unique_name else "ansq")
     log_format = "%(asctime)s - %(levelname)s - %(name)s: %(message)s"
     logging.basicConfig(format=log_format)
     logger.setLevel(logging.DEBUG if debug else logging.INFO)

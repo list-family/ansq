@@ -12,13 +12,13 @@ class NSQHTTPConnection:
     def __init__(self, host="127.0.0.1", port=4151, *, loop):
         self._loop = loop
         self._endpoint = (host, port)
-        self._base_url = "http://{0}:{1}/".format(*self._endpoint)
+        self._base_url = "http://{}:{}/".format(*self._endpoint)
 
         self._session = aiohttp.ClientSession()
 
     @property
     def endpoint(self):
-        return "http://{0}:{1}".format(*self._endpoint)
+        return "http://{}:{}".format(*self._endpoint)
 
     async def close(self):
         return await self._session.close()
@@ -45,4 +45,4 @@ class NSQHTTPConnection:
 
     def __repr__(self):
         cls_name = self.__class__.__name__
-        return "<{}: {}>".format(cls_name, self._endpoint)
+        return f"<{cls_name}: {self._endpoint}>"

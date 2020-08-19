@@ -48,10 +48,7 @@ class Color(Enum):
             "utf-16 str".encode("utf-16"),
             b"\xff\xfeu\x00t\x00f\x00-\x001\x006\x00 \x00s\x00t\x00r\x00",
         ),
-        (
-            bytearray("This is real bytearray".encode("utf-8")),
-            b"This is real bytearray",
-        ),
+        (bytearray(b"This is real bytearray"), b"This is real bytearray",),
         (
             bytearray("hello".encode("utf-32")),
             b"\xff\xfe\x00\x00h\x00\x00\x00e\x00\x00\x00l\x00"

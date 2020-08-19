@@ -11,7 +11,7 @@ async def test_command_pub():
     nsq = await open_connection()
     assert nsq.status.is_connected
 
-    response = await nsq.pub("test_topic", "test_message1, timestamp={}".format(time()))
+    response = await nsq.pub("test_topic", f"test_message1, timestamp={time()}")
     assert response.is_ok
 
     await nsq.close()
@@ -23,15 +23,13 @@ async def test_command_pub_after_reconnect():
     nsq = await open_connection()
     assert nsq.status.is_connected
 
-    response = await nsq.pub("test_topic", "test_message1, timestamp={}".format(time()))
+    response = await nsq.pub("test_topic", f"test_message1, timestamp={time()}")
     assert response.is_ok
 
     assert await nsq.reconnect()
     assert nsq.status.is_connected
 
-    response2 = await nsq.pub(
-        "test_topic", "test_message1, timestamp={}".format(time())
-    )
+    response2 = await nsq.pub("test_topic", f"test_message1, timestamp={time()}")
     assert response2.is_ok
 
     await nsq.close()

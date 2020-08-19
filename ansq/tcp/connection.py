@@ -29,7 +29,7 @@ class NSQConnection(NSQConnectionBase):
 
         self._writer.write(NSQCommands.MAGIC_V2)
         self._status = ConnectionStatus.CONNECTED
-        self.logger.debug("Connect to {} established".format(self.endpoint))
+        self.logger.debug(f"Connect to {self.endpoint} established")
 
         self._reader_task = self._loop.create_task(self._read_data_task())
 
@@ -50,7 +50,7 @@ class NSQConnection(NSQConnectionBase):
 
         :returns: Reconnect successful status.
         """
-        self.logger.debug("Reconnecting to {}...".format(self.endpoint))
+        self.logger.debug(f"Reconnecting to {self.endpoint}...")
         self._status = ConnectionStatus.RECONNECTING
 
         await self._do_close(change_status=False)
@@ -68,7 +68,7 @@ class NSQConnection(NSQConnectionBase):
             await self._do_close(e)
             return False
 
-        self.logger.debug("Reconnected to {}".format(self.endpoint))
+        self.logger.debug(f"Reconnected to {self.endpoint}")
         self._status = ConnectionStatus.CONNECTED
         return True
 
@@ -86,7 +86,7 @@ class NSQConnection(NSQConnectionBase):
                 )
             )
         else:
-            self.logger.debug("Connection {} is closing...".format(self.endpoint))
+            self.logger.debug(f"Connection {self.endpoint} is closing...")
 
         if self.is_subscribed and change_status:
             self._is_subscribed = False
@@ -120,14 +120,14 @@ class NSQConnection(NSQConnectionBase):
 
         if change_status:
             self._status = ConnectionStatus.CLOSED
-            self.logger.debug("Connection {} is closed".format(self.endpoint))
+            self.logger.debug(f"Connection {self.endpoint} is closed")
 
     async def execute(
         self,
         command: Union[str, bytes],
         *args,
         data: Any = None,
-        callback: Callable = None
+        callback: Callable = None,
     ) -> Optional[Union[NSQResponseSchema, NSQErrorSchema, NSQMessageSchema]]:
         """Execute command
 
@@ -452,7 +452,7 @@ async def open_connection(
     deflate_level: int = 6,
     sample_rate: int = 0,
     debug: bool = False,
-    logger: logging.Logger = None
+    logger: logging.Logger = None,
 ) -> NSQConnection:
     nsq = NSQConnection(
         host,
