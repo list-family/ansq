@@ -1,3 +1,6 @@
+from typing import Union
+
+
 class NSQException(Exception):
     """XXX"""
 
@@ -125,5 +128,5 @@ ERROR_CODES = {
 # E_FIN_FAILED
 
 
-def get_exception(code, error_message):
+def get_exception(code: str, error_message: Union[str, bytes]):
     return ERROR_CODES.get(code, NSQErrorCode)(f"{code}: {error_message}")

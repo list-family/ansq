@@ -128,7 +128,7 @@ class Reader(BaseReader):
         fmt = f">qh16s{msg_len}s"
         return struct.unpack(fmt, self._buffer[start:end])
 
-    def encode_command(self, cmd: str, *args, data: Any = None) -> bytes:
+    def encode_command(self, cmd: Union[str, bytes], *args, data: Any = None) -> bytes:
         """Encode command to bytes"""
         _cmd = convert_to_bytes(cmd.upper().strip())
         _args = [convert_to_bytes(a) for a in args]

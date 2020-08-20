@@ -61,12 +61,12 @@ class TCPConnection(abc.ABC):
         self._reader: Optional[StreamReader] = None
         self._writer: Optional[StreamWriter] = None
         self._reader_task: Optional[asyncio.Task] = None
-        self._reconnect_task: Optional[asyncio.Future] = None
+        self._reconnect_task: Optional[asyncio.Task] = None
         self._auto_reconnect = auto_reconnect
 
         self._parser = Reader()
 
-        self._config = {
+        self._config: Union[dict, str] = {
             "deflate": deflate,
             "deflate_level": deflate_level,
             "sample_rate": sample_rate,
