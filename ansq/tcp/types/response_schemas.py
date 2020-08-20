@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Optional, Union
 
 from . import FrameType, NSQCommands
 
@@ -9,20 +9,18 @@ class NSQResponseSchema:
     body: bytes
     frame_type: FrameType
 
-    def __init__(self, body: bytes, frame_type: Union[FrameType, int] = None):
+    def __init__(self, body: bytes, frame_type: Union[FrameType, int]) -> None:
         self.body = body
         self.frame_type = (
-            frame_type
-            if isinstance(frame_type, FrameType) or frame_type is None
-            else FrameType(frame_type)
+            frame_type if isinstance(frame_type, FrameType) else FrameType(frame_type)
         )
 
-    def __repr__(self):
-        return "<NSQResponseSchema frame_type:{}, body:{}, is_ok:{}>".format(
+    def __repr__(self) -> str:
+        return "<NSQResponseSchema frame_type:{}, body:{!r}, is_ok:{}>".format(
             self.frame_type, self.body, self.is_ok,
         )
 
-    def __bool__(self):
+    def __bool__(self) -> bool:
         return True
 
     @property
@@ -49,9 +47,10 @@ class NSQResponseSchema:
 class NSQMessageSchema(NSQResponseSchema):
     """NSQ Message schema"""
 
-    timestamp: int = None
-    attempts: int = None
-    id: str = None
+    # FIXME are they really intented to be optional?
+    timestamp: Optional[int] = None
+    attempts: Optional[int] = None
+    id: Optional[str] = None
 
     def __init__(
         self,
@@ -60,15 +59,15 @@ class NSQMessageSchema(NSQResponseSchema):
         id_: bytes,
         body: bytes,
         frame_type: Union[FrameType, int],
-    ):
+    ) -> None:
         super().__init__(body, frame_type)
         self.timestamp = timestamp
         self.attempts = attempts
         self.id = id_.decode("utf-8")
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return (
-            "<NSQMessageSchema frame_type:{}, body:{}, timestamp:{}, "
+            "<NSQMessageSchema frame_type:{}, body:{!r}, timestamp:{}, "
             "attempts:{}, id:{}>"
         ).format(self.frame_type, self.body, self.timestamp, self.attempts, self.id)
 
@@ -78,14 +77,16 @@ class NSQErrorSchema(NSQResponseSchema):
 
     code: str
 
-    def __init__(self, code: bytes, body: bytes, frame_type: Union[FrameType, int]):
+    def __init__(
+        self, code: bytes, body: bytes, frame_type: Union[FrameType, int],
+    ) -> None:
         super().__init__(body, frame_type)
         self.code = code.decode("utf-8")
 
-    def __repr__(self):
-        return "<NSQErrorSchema frame_type:{}, body:{}, code:{}>".format(
+    def __repr__(self) -> str:
+        return "<NSQErrorSchema frame_type:{}, body:{!r}, code:{}>".format(
             self.frame_type, self.body, self.code,
         )
 
-    def __bool__(self):
+    def __bool__(self) -> bool:
         return False

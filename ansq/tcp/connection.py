@@ -157,7 +157,11 @@ class NSQConnection(NSQConnectionBase):
         ):
             raise NSQUnauthorized("NSQ server requires client authorization")
 
-        if self.status.is_reconnecting and self._reconnect_task:
+        if (
+            self.status.is_reconnecting
+            and self._reconnect_task
+            and not self._reconnect_task.done()
+        ):
             await self._reconnect_task
 
         assert self._reader, "You should call `connect` method first"
