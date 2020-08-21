@@ -4,6 +4,7 @@ import logging
 from asyncio.events import AbstractEventLoop
 from asyncio.streams import StreamReader, StreamWriter
 from collections import deque
+from datetime import datetime
 from typing import TYPE_CHECKING, Any, Callable, Optional, Union
 
 if TYPE_CHECKING:
@@ -75,7 +76,7 @@ class TCPConnection(abc.ABC):
             "feature_negotiation": feature_negotiation,
         }
 
-        self._last_message_timestamp: Optional[float] = None
+        self._last_message_time: Optional[datetime] = None
         # Next queue is used for nsq commands
         self._cmd_waiters = deque()
         # Mark connection in upgrading state to ssl socket
@@ -120,8 +121,8 @@ class TCPConnection(abc.ABC):
         return self._message_queue
 
     @property
-    def last_message(self) -> float:
-        return self._last_message_timestamp
+    def last_message(self) -> datetime:
+        return self._last_message_time
 
     @property
     def is_subscribed(self) -> bool:

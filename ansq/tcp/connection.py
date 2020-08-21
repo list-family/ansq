@@ -3,7 +3,7 @@ import json
 import logging
 import sys
 from asyncio.events import AbstractEventLoop
-from time import time
+from datetime import datetime, timezone
 from typing import Any, Callable, Generator, Optional, Union
 
 from ansq.tcp import consts
@@ -295,7 +295,7 @@ class NSQConnection(NSQConnectionBase):
         return True
 
     def _on_message_hook(self, message_schema: NSQMessageSchema):
-        self._last_message_timestamp = time()
+        self._last_message_time = datetime.now(tz=timezone.utc)
         message = NSQMessage(message_schema, self)
 
         if self._on_message:

@@ -1,6 +1,8 @@
+from datetime import datetime, timedelta, timezone
 from functools import wraps
-from time import time
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
+
+from ansq.tcp.consts import DEFAULT_REQ_TIMEOUT
 
 if TYPE_CHECKING:
     from ansq.tcp.connection import NSQConnection
@@ -31,7 +33,7 @@ class NSQMessage:
         self,
         message_schema: "NSQMessageSchema",
         connection: "NSQConnection",
-        timeout: int = 60000,
+        timeout_in: Union[timedelta, float, int] = timedelta(minutes=1),
         is_processed: bool = False,
     ):
         self.timestamp = message_schema.timestamp
@@ -41,8 +43,10 @@ class NSQMessage:
         self._connection = connection
         self._is_processed = is_processed
 
-        self._timeout_in = timeout
-        self._initialized_at = time()
+        if isinstance(timeout_in, (float, int)):
+            timeout_in = timedelta(seconds=timeout_in)
+        self._timeout_in = timeout_in
+        self._initialized_at = datetime.now(tz=timezone.utc)
 
     def __repr__(self):
         return (
@@ -79,12 +83,12 @@ class NSQMessage:
         return self.is_timed_out or self._is_processed
 
     @property
-    def timeout(self) -> float:
+    def timeout(self) -> timedelta:
         return self._timeout_in
 
     @property
     def is_timed_out(self) -> bool:
-        return self._initialized_at + self._timeout_in * 0.001 < time()
+        return self._initialized_at + self.timeout < datetime.now(tz=timezone.utc)
 
     @not_processed
     async def fin(self):
@@ -96,10 +100,11 @@ class NSQMessage:
         self._is_processed = True
 
     @not_processed
-    async def req(self, timeout=10):
+    async def req(self, timeout=DEFAULT_REQ_TIMEOUT):
         """Re-queue a message (indicate failure to process)
 
-        :param timeout: ``int`` configured max timeout  0 is a special case
+        :param timeout: An ``int`` in milliseconds where
+            N <= configured max timeout; 0 is a special case
             that will not defer re-queueing.
         :raises RuntimeWarning: in case message was processed earlier.
         """
