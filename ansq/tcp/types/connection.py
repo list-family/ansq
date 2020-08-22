@@ -16,7 +16,7 @@ if TYPE_CHECKING:
         NSQResponseSchema,
     )
 
-_Response_T = Optional[Union[NSQResponseSchema, NSQErrorSchema, NSQMessageSchema]]
+_Response_T = Optional[Union["NSQResponseSchema", "NSQErrorSchema", "NSQMessageSchema"]]
 _Message_T = TypeVar("_Message_T")
 
 

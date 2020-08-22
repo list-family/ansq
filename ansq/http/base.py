@@ -1,15 +1,24 @@
 import json
+from typing import TYPE_CHECKING, Any, Dict, Union
 
 import aiohttp
 
 from ..utils import convert_to_str
 from .http_exceptions import HTTP_EXCEPTIONS, NSQHTTPException
 
+if TYPE_CHECKING:
+    from asyncio.events import AbstractEventLoop
+
+
+_HTTPResponse_T = Union[Dict, str]
+
 
 class NSQHTTPConnection:
     """XXX"""
 
-    def __init__(self, host="127.0.0.1", port=4151, *, loop):
+    def __init__(
+        self, host: str = "127.0.0.1", port: int = 4151, *, loop: "AbstractEventLoop",
+    ) -> None:
         self._loop = loop
         self._endpoint = (host, port)
         self._base_url = "http://{}:{}/".format(*self._endpoint)
@@ -17,13 +26,15 @@ class NSQHTTPConnection:
         self._session = aiohttp.ClientSession()
 
     @property
-    def endpoint(self):
+    def endpoint(self) -> str:
         return "http://{}:{}".format(*self._endpoint)
 
-    async def close(self):
-        return await self._session.close()
+    async def close(self) -> None:
+        await self._session.close()
 
-    async def perform_request(self, method, url, params, body):
+    async def perform_request(
+        self, method: str, url: str, params: Any, body: Any
+    ) -> _HTTPResponse_T:
         _body = convert_to_str(body) if body else body
         url = self._base_url + url
         resp = await self._session.request(method, url, params=params, data=_body)
@@ -43,6 +54,6 @@ class NSQHTTPConnection:
             raise exc_class(resp.status, resp_body, extra)
         return response
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         cls_name = self.__class__.__name__
         return f"<{cls_name}: {self._endpoint}>"
