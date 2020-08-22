@@ -1,4 +1,4 @@
-from typing import Optional, Union
+from typing import Union
 
 from . import FrameType, NSQCommands
 
@@ -47,10 +47,9 @@ class NSQResponseSchema:
 class NSQMessageSchema(NSQResponseSchema):
     """NSQ Message schema"""
 
-    # FIXME are they really intented to be optional?
-    timestamp: Optional[int] = None
-    attempts: Optional[int] = None
-    id: Optional[str] = None
+    timestamp: int
+    attempts: int
+    id: str
 
     def __init__(
         self,

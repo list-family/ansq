@@ -127,7 +127,7 @@ class TCPConnection(abc.ABC):
 
     @property
     def last_message(self) -> Optional[datetime]:
-        return self._last_message_timestamp
+        return self._last_message_time
 
     @property
     def is_subscribed(self) -> bool:
