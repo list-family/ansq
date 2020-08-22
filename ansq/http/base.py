@@ -1,16 +1,15 @@
 import json
-from typing import TYPE_CHECKING, Any, Dict, Union
+from typing import TYPE_CHECKING, Any
 
 import aiohttp
+
+from ansq.typedefs import HTTPResponse
 
 from ..utils import convert_to_str
 from .http_exceptions import HTTP_EXCEPTIONS, NSQHTTPException
 
 if TYPE_CHECKING:
     from asyncio.events import AbstractEventLoop
-
-
-_HTTPResponse_T = Union[Dict, str]
 
 
 class NSQHTTPConnection:
@@ -34,7 +33,7 @@ class NSQHTTPConnection:
 
     async def perform_request(
         self, method: str, url: str, params: Any, body: Any
-    ) -> _HTTPResponse_T:
+    ) -> HTTPResponse:
         _body = convert_to_str(body) if body else body
         url = self._base_url + url
         resp = await self._session.request(method, url, params=params, data=_body)

@@ -5,19 +5,12 @@ from asyncio.events import AbstractEventLoop
 from asyncio.streams import StreamReader, StreamWriter
 from collections import deque
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Callable, Deque, Optional, Tuple, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Callable, Deque, Optional, Tuple, Union
+
+from ansq.typedefs import TCPResponse
 
 if TYPE_CHECKING:
-    from ansq.tcp.types import (
-        ConnectionStatus,
-        NSQErrorSchema,
-        NSQMessage,
-        NSQMessageSchema,
-        NSQResponseSchema,
-    )
-
-_Response_T = Optional[Union["NSQResponseSchema", "NSQErrorSchema", "NSQMessageSchema"]]
-_Message_T = TypeVar("_Message_T")
+    from ansq.tcp.types import ConnectionStatus, NSQMessage, NSQMessageSchema
 
 
 class TCPConnection(abc.ABC):
@@ -82,7 +75,7 @@ class TCPConnection(abc.ABC):
         self._last_message_time: Optional[datetime] = None
         # Next queue is used for nsq commands
         self._cmd_waiters: Deque[
-            Tuple[asyncio.Future, Optional[Callable[[_Response_T], Any]]]
+            Tuple[asyncio.Future, Optional[Callable[[TCPResponse], Any]]]
         ] = deque()
         # Mark connection in upgrading state to ssl socket
         self._is_upgrading = False
@@ -181,15 +174,15 @@ class TCPConnection(abc.ABC):
         self,
         command: Union[str, bytes],
         *args: Any,
-        data: Optional[_Message_T] = None,
-        callback: Callable[[_Response_T], Any] = None,
-    ) -> _Response_T:
+        data: Optional[Any] = None,
+        callback: Callable[[TCPResponse], Any] = None,
+    ) -> TCPResponse:
         raise NotImplementedError()
 
     @abc.abstractmethod
     async def identify(
         self, config: Optional[Union[dict, str]] = None, **kwargs: Any
-    ) -> _Response_T:
+    ) -> TCPResponse:
         raise NotImplementedError()
 
     async def _pulse(self) -> None:
@@ -226,9 +219,9 @@ class TCPConnection(abc.ABC):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def _start_upgrading(self, resp: Optional[_Response_T] = None) -> None:
+    def _start_upgrading(self, resp: Optional[TCPResponse] = None) -> None:
         raise NotImplementedError()
 
     @abc.abstractmethod
-    async def _finish_upgrading(self, resp: Optional[_Response_T] = None) -> None:
+    async def _finish_upgrading(self, resp: Optional[TCPResponse] = None) -> None:
         raise NotImplementedError()

@@ -4,7 +4,7 @@ import logging
 import sys
 from asyncio.events import AbstractEventLoop
 from datetime import datetime, timezone
-from typing import Any, AsyncGenerator, Callable, Optional, Sequence, TypeVar, Union
+from typing import Any, AsyncGenerator, Callable, Optional, Union
 
 from ansq.tcp import consts
 from ansq.tcp.exceptions import NSQUnauthorized, ProtocolError, get_exception
@@ -17,10 +17,8 @@ from ansq.tcp.types import (
     NSQResponseSchema,
 )
 from ansq.tcp.types import TCPConnection as NSQConnectionBase
+from ansq.typedefs import TCPResponse
 from ansq.utils import validate_topic_channel_name
-
-_Response_T = Optional[Union[NSQResponseSchema, NSQErrorSchema, NSQMessageSchema]]
-_Message_T = TypeVar("_Message_T")
 
 
 class NSQConnection(NSQConnectionBase):
@@ -135,9 +133,9 @@ class NSQConnection(NSQConnectionBase):
         self,
         command: Union[str, bytes],
         *args: Any,
-        data: Optional[_Message_T] = None,
-        callback: Optional[Callable[[_Response_T], Any]] = None,
-    ) -> _Response_T:
+        data: Optional[Any] = None,
+        callback: Optional[Callable[[TCPResponse], Any]] = None,
+    ) -> TCPResponse:
         """Execute command
 
         Be careful: commands ``NOP``, ``FIN``, ``RDY``, ``REQ``, ``TOUCH``
@@ -199,7 +197,7 @@ class NSQConnection(NSQConnectionBase):
 
     async def identify(
         self, config: Optional[Union[dict, str]] = None, **kwargs: Any
-    ) -> _Response_T:
+    ) -> TCPResponse:
         if config and isinstance(config, (dict, str)):
             raise TypeError("Config should be dict type or str")
 
@@ -296,7 +294,7 @@ class NSQConnection(NSQConnectionBase):
             return True
 
         future: asyncio.Future
-        callback: Optional[Callable[[_Response_T], Any]]
+        callback: Optional[Callable[[TCPResponse], Any]]
         future, callback = self._cmd_waiters.popleft()
 
         if response.is_response:
@@ -331,14 +329,14 @@ class NSQConnection(NSQConnectionBase):
         while is_continue:
             is_continue = await self._parse_data()
 
-    def _start_upgrading(self, resp: Optional[_Response_T] = None) -> None:
+    def _start_upgrading(self, resp: Optional[TCPResponse] = None) -> None:
         self._is_upgrading = True
 
-    async def _finish_upgrading(self, resp: Optional[_Response_T] = None) -> None:
+    async def _finish_upgrading(self, resp: Optional[TCPResponse] = None) -> None:
         await self._read_buffer()
         self._is_upgrading = False
 
-    async def auth(self, secret: str) -> _Response_T:
+    async def auth(self, secret: str) -> TCPResponse:
         """If the ``IDENTIFY`` response indicates ``auth_required=true``
         the client must send ``AUTH`` before any ``SUB``, ``PUB`` or ``MPUB``
         commands. If auth_required is not present (or ``false``),
@@ -352,7 +350,7 @@ class NSQConnection(NSQConnectionBase):
             self._secret = secret
         return response
 
-    async def sub(self, topic: str, channel: str) -> _Response_T:
+    async def sub(self, topic: str, channel: str) -> TCPResponse:
         """Subscribe to the topic and channel"""
         validate_topic_channel_name(topic)
         validate_topic_channel_name(channel)
@@ -363,19 +361,17 @@ class NSQConnection(NSQConnectionBase):
             self._is_subscribed = True
         return response
 
-    async def pub(self, topic: str, message: _Message_T) -> _Response_T:
+    async def pub(self, topic: str, message: Any) -> TCPResponse:
         """Publish a message to a topic"""
         validate_topic_channel_name(topic)
         return await self.execute(NSQCommands.PUB, topic, data=message)
 
-    async def dpub(
-        self, topic: str, message: _Message_T, delay_time: int
-    ) -> _Response_T:
+    async def dpub(self, topic: str, message: Any, delay_time: int) -> TCPResponse:
         """Publish a deferred message to a topic"""
         validate_topic_channel_name(topic)
         return await self.execute(NSQCommands.DPUB, topic, delay_time, data=message)
 
-    async def mpub(self, topic: str, *messages: Sequence[_Message_T]) -> _Response_T:
+    async def mpub(self, topic: str, *messages: Any) -> TCPResponse:
         """Publish multiple messages to a topic"""
         validate_topic_channel_name(topic)
         return await self.execute(
@@ -416,7 +412,7 @@ class NSQConnection(NSQConnectionBase):
             await message_id.touch()
         await self.execute(NSQCommands.TOUCH, message_id)
 
-    async def _cls(self) -> _Response_T:
+    async def _cls(self) -> TCPResponse:
         return await self.execute(NSQCommands.CLS)
 
     async def subscribe(
