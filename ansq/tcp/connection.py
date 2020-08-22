@@ -136,8 +136,8 @@ class NSQConnection(NSQConnectionBase):
         command: Union[str, bytes],
         *args: Any,
         data: Optional[_Message_T] = None,
-        callback: Callable[[_Response_T], Any] = None,
-    ) -> Optional[Union[NSQResponseSchema, NSQErrorSchema, NSQMessageSchema]]:
+        callback: Optional[Callable[[_Response_T], Any]] = None,
+    ) -> _Response_T:
         """Execute command
 
         Be careful: commands ``NOP``, ``FIN``, ``RDY``, ``REQ``, ``TOUCH``
@@ -296,7 +296,7 @@ class NSQConnection(NSQConnectionBase):
             return True
 
         future: asyncio.Future
-        callback: Callable
+        callback: Optional[Callable[[_Response_T], Any]]
         future, callback = self._cmd_waiters.popleft()
 
         if response.is_response:
@@ -448,7 +448,7 @@ class NSQConnection(NSQConnectionBase):
         except asyncio.QueueEmpty:
             return None
 
-    async def wait_for_message(self) -> NSQMessage:
+    async def wait_for_message(self) -> Optional[NSQMessage]:
         """Shortcut for `asyncio.Queue.get()``.
 
         :rtype: :class:`NSQMessage`
