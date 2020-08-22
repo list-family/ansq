@@ -33,5 +33,5 @@ class ConnectionStatus(Enum):
     def is_reconnecting(self) -> bool:
         return self == self.RECONNECTING
 
-    def __bool__(self):
+    def __bool__(self) -> bool:
         return not self.is_closed and not self.is_closing and not self.is_init
