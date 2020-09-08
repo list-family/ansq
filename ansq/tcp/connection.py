@@ -7,7 +7,12 @@ from datetime import datetime, timezone
 from typing import Any, AsyncGenerator, Callable, Optional, Union
 
 from ansq.tcp import consts
-from ansq.tcp.exceptions import NSQUnauthorized, ProtocolError, get_exception
+from ansq.tcp.exceptions import (
+    ConnectionClosedError,
+    NSQUnauthorized,
+    ProtocolError,
+    get_exception,
+)
 from ansq.tcp.types import (
     ConnectionStatus,
     NSQCommands,
@@ -122,6 +127,11 @@ class NSQConnection(NSQConnectionBase):
         finally:
             pass
 
+        for future, callback in self._cmd_waiters:
+            if not future.cancelled():
+                future.set_exception(ConnectionClosedError("Connection is closed"))
+                callback is not None and callback(None)
+
         if self._message_queue.qsize() > 0:
             self._message_queue.get_nowait()
 
@@ -163,7 +173,8 @@ class NSQConnection(NSQConnectionBase):
             await self._reconnect_task
 
         assert self._reader, "You should call `connect` method first"
-        assert self._status or command == NSQCommands.CLS, "Connection is closed"
+        if not self._status and not (command == NSQCommands.CLS):
+            raise ConnectionClosedError("Connection is closed")
 
         future = self._loop.create_future()
         if command in (
