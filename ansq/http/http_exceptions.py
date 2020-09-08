@@ -1,3 +1,6 @@
+from typing import Dict
+
+
 class NSQHTTPException(Exception):
     """XXX"""
 
@@ -6,28 +9,28 @@ class TransportError(NSQHTTPException):
     """XXX"""
 
     @property
-    def status_code(self):
+    def status_code(self) -> int:
         """XXX"""
         return self.args[0]
 
     @property
-    def error(self):
+    def error(self) -> str:
         """A string error message."""
         return self.args[1]
 
     @property
-    def info(self):
+    def info(self) -> Dict:
         """Dict of returned error info from ES, where available."""
         return self.args[2]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"TransportError({self.status_code}, {self.error!r})"
 
 
 class HTTPConnectionError(TransportError):
     """XXX"""
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "HttpConnectionError({}) caused by: {}({})".format(
             self.error, self.info.__class__.__name__, self.info,
         )

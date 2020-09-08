@@ -21,15 +21,15 @@ __all__ = "Reader"
 
 class BaseReader(metaclass=abc.ABCMeta):
     @abc.abstractmethod  # pragma: no cover
-    def feed(self, chunk):
+    def feed(self, chunk: bytes) -> None:
         pass
 
     @abc.abstractmethod  # pragma: no cover
-    def get(self):
+    def get(self) -> Any:
         pass
 
     @abc.abstractmethod  # pragma: no cover
-    def encode_command(self, cmd, *args, data=None):
+    def encode_command(self, cmd: str, *args: Any, data: Optional[Any] = None) -> bytes:
         pass
 
 
@@ -38,19 +38,22 @@ class Reader(BaseReader):
         self._buffer = bytearray()
         self._is_header = False
         self._payload_size = 0
-        buffer and self.feed(buffer)
+        if buffer:
+            self.feed(buffer)
 
     @property
     def buffer(self) -> bytearray:
         return self._buffer
 
-    def feed(self, chunk: bytes):
+    def feed(self, chunk: bytes) -> None:
         """Put raw chunk of data obtained from connection to buffer.
 
         :param chunk: Raw input data.
         :type chunk: :class:`bytes`
         """
-        chunk and self._buffer.extend(chunk)
+        if not chunk:
+            return
+        self._buffer.extend(chunk)
 
     def get(
         self,
@@ -78,6 +81,8 @@ class Reader(BaseReader):
             self._payload_size = 0
 
             return resp
+
+        return None
 
     def _parse_payload(
         self, frame_type: FrameType, payload_size: int,
@@ -126,9 +131,13 @@ class Reader(BaseReader):
         end = consts.DATA_SIZE + payload_size
         msg_len = end - start - consts.MSG_HEADER
         fmt = f">qh16s{msg_len}s"
-        return struct.unpack(fmt, self._buffer[start:end])
 
-    def encode_command(self, cmd: str, *args, data: Any = None) -> bytes:
+        timestamp, attempts, id_, body = struct.unpack(fmt, self._buffer[start:end])
+        return timestamp, attempts, id_, body
+
+    def encode_command(
+        self, cmd: Union[str, bytes], *args: Any, data: Any = None,
+    ) -> bytes:
         """Encode command to bytes"""
         _cmd = convert_to_bytes(cmd.upper().strip())
         _args = [convert_to_bytes(a) for a in args]

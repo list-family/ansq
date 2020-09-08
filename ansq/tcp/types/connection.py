@@ -5,16 +5,12 @@ from asyncio.events import AbstractEventLoop
 from asyncio.streams import StreamReader, StreamWriter
 from collections import deque
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Callable, Optional, Union
+from typing import TYPE_CHECKING, Any, Callable, Deque, Optional, Tuple, Union
+
+from ansq.typedefs import TCPResponse
 
 if TYPE_CHECKING:
-    from ansq.tcp.types import (
-        ConnectionStatus,
-        NSQErrorSchema,
-        NSQMessage,
-        NSQMessageSchema,
-        NSQResponseSchema,
-    )
+    from ansq.tcp.types import ConnectionStatus, NSQMessage, NSQMessageSchema
 
 
 class TCPConnection(abc.ABC):
@@ -61,12 +57,12 @@ class TCPConnection(abc.ABC):
         self._reader: Optional[StreamReader] = None
         self._writer: Optional[StreamWriter] = None
         self._reader_task: Optional[asyncio.Task] = None
-        self._reconnect_task: Optional[asyncio.Future] = None
+        self._reconnect_task: Optional[asyncio.Task] = None
         self._auto_reconnect = auto_reconnect
 
         self._parser = Reader()
 
-        self._config = {
+        self._config: Union[dict, str] = {
             "deflate": deflate,
             "deflate_level": deflate_level,
             "sample_rate": sample_rate,
@@ -78,7 +74,9 @@ class TCPConnection(abc.ABC):
 
         self._last_message_time: Optional[datetime] = None
         # Next queue is used for nsq commands
-        self._cmd_waiters = deque()
+        self._cmd_waiters: Deque[
+            Tuple[asyncio.Future, Optional[Callable[[TCPResponse], Any]]]
+        ] = deque()
         # Mark connection in upgrading state to ssl socket
         self._is_upgrading = False
         # Number of received but not acked or req messages
@@ -117,11 +115,11 @@ class TCPConnection(abc.ABC):
         return self._in_flight
 
     @property
-    def message_queue(self) -> "asyncio.Queue[NSQMessage]":
+    def message_queue(self) -> "asyncio.Queue[Optional[NSQMessage]]":
         return self._message_queue
 
     @property
-    def last_message(self) -> datetime:
+    def last_message(self) -> Optional[datetime]:
         return self._last_message_time
 
     @property
@@ -154,33 +152,37 @@ class TCPConnection(abc.ABC):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    async def reconnect(self):
+    async def reconnect(self) -> bool:
         raise NotImplementedError()
 
-    async def close(self):
+    async def close(self) -> None:
         """Cleanly close your connection (no more messages are sent)"""
         await self._do_close()
 
-    async def cls(self):
+    async def cls(self) -> None:
         """Alias command for ``close()``."""
         await self.close()
 
     @abc.abstractmethod
-    async def _do_close(self, exception: Exception = None):
+    async def _do_close(
+        self, exception: Optional[Exception] = None, change_status: bool = True
+    ) -> None:
         raise NotImplementedError()
 
     @abc.abstractmethod
     async def execute(
         self,
         command: Union[str, bytes],
-        *args,
-        data: Any = None,
-        callback: Callable = None,
-    ) -> Optional[Union["NSQResponseSchema", "NSQErrorSchema", "NSQMessageSchema"]]:
+        *args: Any,
+        data: Optional[Any] = None,
+        callback: Callable[[TCPResponse], Any] = None,
+    ) -> TCPResponse:
         raise NotImplementedError()
 
     @abc.abstractmethod
-    async def identify(self, **config):
+    async def identify(
+        self, config: Optional[Union[dict, str]] = None, **kwargs: Any
+    ) -> TCPResponse:
         raise NotImplementedError()
 
     async def _pulse(self) -> None:
@@ -189,19 +191,19 @@ class TCPConnection(abc.ABC):
         await self.execute(NSQCommands.NOP)
 
     @abc.abstractmethod
-    async def _upgrade_to_tls(self):
+    async def _upgrade_to_tls(self) -> None:
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def _upgrade_to_snappy(self):
+    def _upgrade_to_snappy(self) -> asyncio.Future:
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def _upgrade_to_deflate(self):
+    def _upgrade_to_deflate(self) -> asyncio.Future:
         raise NotImplementedError()
 
     @abc.abstractmethod
-    async def _read_data_task(self):
+    async def _read_data_task(self) -> None:
         raise NotImplementedError()
 
     @abc.abstractmethod
@@ -209,17 +211,17 @@ class TCPConnection(abc.ABC):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def _on_message_hook(self, response: "NSQMessageSchema"):
+    def _on_message_hook(self, response: "NSQMessageSchema") -> None:
         raise NotImplementedError()
 
     @abc.abstractmethod
-    async def _read_buffer(self):
+    async def _read_buffer(self) -> None:
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def _start_upgrading(self, resp=None):
+    def _start_upgrading(self, resp: Optional[TCPResponse] = None) -> None:
         raise NotImplementedError()
 
     @abc.abstractmethod
-    async def _finish_upgrading(self, resp=None):
+    async def _finish_upgrading(self, resp: Optional[TCPResponse] = None) -> None:
         raise NotImplementedError()

@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from functools import wraps
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Any, Callable, Union
 
 from ansq.tcp.consts import DEFAULT_REQ_TIMEOUT
 
@@ -12,14 +12,14 @@ if TYPE_CHECKING:
 __all__ = "NSQMessage"
 
 
-def not_processed(func):
+def not_processed(func: Callable) -> Callable:
     """Decorator to verify that the message has not yet been processed.
 
     :raises RuntimeWarning: in case message was processed earlier.
     """
 
     @wraps(func)
-    async def decorator(cls: "NSQMessage", *args, **kwargs):
+    async def decorator(cls: "NSQMessage", *args: Any, **kwargs: Any) -> Any:
         if cls.is_processed:
             raise RuntimeWarning("Message has already been processed")
         response = await func(cls, *args, **kwargs)
@@ -35,7 +35,7 @@ class NSQMessage:
         connection: "NSQConnection",
         timeout_in: Union[timedelta, float, int] = timedelta(minutes=1),
         is_processed: bool = False,
-    ):
+    ) -> None:
         self.timestamp = message_schema.timestamp
         self.attempts = message_schema.attempts
         self.body = message_schema.body
@@ -48,9 +48,9 @@ class NSQMessage:
         self._timeout_in = timeout_in
         self._initialized_at = datetime.now(tz=timezone.utc)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return (
-            '<NSQMessage id="{id}", body={body}, attempts={attempts}, '
+            '<NSQMessage id="{id}", body={body!r}, attempts={attempts}, '
             "timestamp={timestamp}, timeout={timeout}, "
             "initialized_at={initialized_at}, is_timed_out={is_timed_out}, "
             "is_processed={is_processed}>".format(
@@ -65,7 +65,7 @@ class NSQMessage:
             )
         )
 
-    def __str__(self):
+    def __str__(self) -> str:
         """Returns decoded message's body.
 
         :raises UnicodeDecodeError: Trying to decode bytes like ``b'\xa1'``.
@@ -91,7 +91,7 @@ class NSQMessage:
         return self._initialized_at + self.timeout < datetime.now(tz=timezone.utc)
 
     @not_processed
-    async def fin(self):
+    async def fin(self) -> None:
         """Finish a message (indicate successful processing)
 
         :raises RuntimeWarning: in case message was processed earlier.
@@ -100,7 +100,7 @@ class NSQMessage:
         self._is_processed = True
 
     @not_processed
-    async def req(self, timeout=DEFAULT_REQ_TIMEOUT):
+    async def req(self, timeout: int = DEFAULT_REQ_TIMEOUT) -> None:
         """Re-queue a message (indicate failure to process)
 
         :param timeout: An ``int`` in milliseconds where
@@ -112,7 +112,7 @@ class NSQMessage:
         self._is_processed = True
 
     @not_processed
-    async def touch(self):
+    async def touch(self) -> None:
         """Reset the timeout for an in-flight message.
 
         :raises RuntimeWarning: in case message was processed earlier.
