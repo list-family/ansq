@@ -106,14 +106,14 @@ async def test_command_with_concurrently_closed_connection():
     nsq = await open_connection()
 
     async def wait_and_close():
-        await asyncio.sleep(1)
+        await asyncio.sleep(0)
         await nsq.close()
 
     async def blocking_wait_and_pub():
-        sleep(2)
+        sleep(0.1)
         await nsq.pub("test_topic", "test_message")
 
     with pytest.raises(ConnectionClosedError, match="^Connection is closed$"):
         await asyncio.wait_for(
-            asyncio.gather(wait_and_close(), blocking_wait_and_pub()), timeout=5,
+            asyncio.gather(wait_and_close(), blocking_wait_and_pub()), timeout=1,
         )
