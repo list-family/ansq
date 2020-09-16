@@ -1,6 +1,10 @@
 from typing import Union
 
 
+class ConnectionClosedError(Exception):
+    pass
+
+
 class NSQException(Exception):
     """XXX"""
 
