@@ -22,6 +22,8 @@ def not_processed(func: Callable) -> Callable:
     async def decorator(cls: "NSQMessage", *args: Any, **kwargs: Any) -> Any:
         if cls.is_processed:
             raise RuntimeWarning("Message has already been processed")
+        if cls.is_timed_out:
+            raise RuntimeWarning("Message is timed out")
         response = await func(cls, *args, **kwargs)
         return response
 
@@ -53,7 +55,7 @@ class NSQMessage:
             '<NSQMessage id="{id}", body={body!r}, attempts={attempts}, '
             "timestamp={timestamp}, timeout={timeout}, "
             "initialized_at={initialized_at}, is_timed_out={is_timed_out}, "
-            "is_processed={is_processed}>".format(
+            "is_processed={is_processed}, can_be_processed={can_be_processed}>".format(
                 id=self.id,
                 body=self.body,
                 attempts=self.attempts,
@@ -62,6 +64,7 @@ class NSQMessage:
                 initialized_at=self._initialized_at,
                 is_timed_out=self.is_timed_out,
                 is_processed=self.is_processed,
+                can_be_processed=self.can_be_processed,
             )
         )
 
@@ -78,9 +81,8 @@ class NSQMessage:
         """True if message has been processed:
             * finished
             * re-queued
-            * timed out
         """
-        return self.is_timed_out or self._is_processed
+        return self._is_processed
 
     @property
     def timeout(self) -> timedelta:
@@ -89,6 +91,11 @@ class NSQMessage:
     @property
     def is_timed_out(self) -> bool:
         return self._initialized_at + self.timeout < datetime.now(tz=timezone.utc)
+
+    @property
+    def can_be_processed(self) -> bool:
+        """True if the message has not been processed and has not timed out yet"""
+        return not self.is_timed_out and not self.is_processed
 
     @not_processed
     async def fin(self) -> None:
@@ -118,3 +125,4 @@ class NSQMessage:
         :raises RuntimeWarning: in case message was processed earlier.
         """
         await self._connection.touch(self.id)
+        self._initialized_at = datetime.now(tz=timezone.utc)
