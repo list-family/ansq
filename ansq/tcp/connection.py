@@ -447,7 +447,7 @@ class NSQConnection(NSQConnectionBase):
         while self.is_subscribed:
             message = await self._message_queue.get()
             if message is None:
-                # Raise _reader_task exception if we closed unexpectedly
+                # Raise exception if connection closed unexpectedly
                 self._reader_task.result()
                 return
             yield message
