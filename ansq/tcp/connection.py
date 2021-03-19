@@ -266,8 +266,6 @@ class NSQConnection(NSQConnectionBase):
                 # should not be closed
                 return
             except Exception as exc:
-                # _do_close stops _read_data_task
-                # hence we need to schedule it as a task
                 self._loop.create_task(self._do_close(exc))
                 raise
 
@@ -281,7 +279,7 @@ class NSQConnection(NSQConnectionBase):
                 self.reconnect(raise_error=False),
             )
         else:
-            exception = OSError("Lost connection to NSQ")
+            exception = ConnectionClosedError("Lost connection to NSQ")
             self._loop.create_task(self._do_close(exception))
             raise exception
 
