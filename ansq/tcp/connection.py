@@ -2,6 +2,7 @@ import asyncio
 import json
 import logging
 import sys
+import typing
 from asyncio.events import AbstractEventLoop
 from datetime import datetime, timezone
 from typing import Any, AsyncGenerator, Callable, Optional, Union
@@ -265,8 +266,10 @@ class NSQConnection(NSQConnectionBase):
                 # should not be closed
                 return
             except Exception as exc:
-                await self._do_close(exc)
-                return
+                # _do_close stops _read_data_task
+                # hence we need to schedule it as a task
+                self._loop.create_task(self._do_close(exc))
+                raise
 
             self._parser.feed(data)
             not self._is_upgrading and await self._read_buffer()
@@ -278,7 +281,9 @@ class NSQConnection(NSQConnectionBase):
                 self.reconnect(raise_error=False),
             )
         else:
-            await self._do_close(OSError("Lost connection to NSQ"))
+            exception = OSError("Lost connection to NSQ")
+            self._loop.create_task(self._do_close(exception))
+            raise exception
 
     async def _parse_data(self) -> bool:
         try:
@@ -439,10 +444,13 @@ class NSQConnection(NSQConnectionBase):
     async def messages(self) -> AsyncGenerator[NSQMessage, None]:
         """Generator, yields messages"""
         assert self.is_subscribed, "You should subscribe to the topic first"
+        self._reader_task = typing.cast(asyncio.Task, self._reader_task)
 
         while self.is_subscribed:
             message = await self._message_queue.get()
             if message is None:
+                # Raise _reader_task exception if we closed unexpectedly
+                self._reader_task.result()
                 return
             yield message
 

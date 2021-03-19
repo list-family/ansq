@@ -140,6 +140,31 @@ async def test_read_messages_via_generator():
 
 
 @pytest.mark.asyncio
+async def test_message_generator_raises_exception_on_disconnect():
+    nsq = await open_connection(auto_reconnect=False)
+    assert nsq.status.is_connected
+
+    response = await nsq.pub(
+        "test_message_generator_raises_exception_on_disconnect", "test_message",
+    )
+    assert response.is_ok
+
+    await nsq.subscribe(
+        "test_message_generator_raises_exception_on_disconnect", "channel1",
+    )
+    assert nsq.is_subscribed
+
+    with pytest.raises(OSError):
+        async for message in nsq.messages():
+            await message.fin()
+
+            # Close connection
+            nsq._reader.feed_eof()
+
+    assert nsq.is_closed
+
+
+@pytest.mark.asyncio
 async def test_read_single_message_via_get_message():
     nsq = await open_connection()
     assert nsq.status.is_connected
