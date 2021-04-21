@@ -124,8 +124,8 @@ class NSQConnection(NSQConnectionBase):
             self._writer.close()
             if sys.version_info >= (3, 7):
                 await self._writer.wait_closed()
-        finally:
-            pass
+        except Exception as e:
+            self.logger.exception(e)
 
         for future, callback in self._cmd_waiters:
             if not future.cancelled():
