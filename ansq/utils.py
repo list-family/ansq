@@ -177,3 +177,11 @@ def get_logger(
     logging.basicConfig(format=log_format)
     logger.setLevel(logging.DEBUG if debug else logging.INFO)
     return logger
+
+
+def truncate_text(text: str, limit: int = 256) -> str:
+    """Truncate a given `text` if the `limit` is reached"""
+    if limit <= 0:
+        raise ValueError("limit must be greater than 0")
+
+    return text[:limit] + "..." if len(text) > limit else text
