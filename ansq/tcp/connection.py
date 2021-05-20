@@ -23,7 +23,7 @@ from ansq.tcp.types import (
 )
 from ansq.tcp.types import TCPConnection as NSQConnectionBase
 from ansq.typedefs import TCPResponse
-from ansq.utils import validate_topic_channel_name
+from ansq.utils import truncate_text, validate_topic_channel_name
 
 
 class NSQConnection(NSQConnectionBase):
@@ -295,7 +295,7 @@ class NSQConnection(NSQConnectionBase):
             await self._pulse()
             return True
 
-        self.logger.debug("NSQ: Got data: %s", response)
+        self.logger.debug("NSQ: Got data: %s", truncate_text(str(response)))
 
         if response.is_message:
             assert isinstance(response, NSQMessageSchema)
