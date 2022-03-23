@@ -1,5 +1,6 @@
 add-trailing-comma==2.0.1
 aiohttp==3.7.4
+async-generator==1.10  # TODO: uses contextlib.asynccontextmanager after py36 being dropped
 black==19.10b0
 flake8==3.8.3
 isort==5.4.2
