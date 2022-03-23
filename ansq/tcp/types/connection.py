@@ -26,6 +26,7 @@ class TCPConnection(abc.ABC):
         on_exception: Callable = None,
         loop: AbstractEventLoop = None,
         auto_reconnect: bool = True,
+        auto_reconnect_interval: int = 15000,
         heartbeat_interval: int = 30000,
         feature_negotiation: bool = True,
         tls_v1: bool = False,
@@ -59,6 +60,7 @@ class TCPConnection(abc.ABC):
         self._reader_task: Optional[asyncio.Task] = None
         self._reconnect_task: Optional[asyncio.Task] = None
         self._auto_reconnect = auto_reconnect
+        self._auto_reconnect_interval = auto_reconnect_interval
 
         self._parser = Reader()
 
@@ -165,7 +167,10 @@ class TCPConnection(abc.ABC):
 
     @abc.abstractmethod
     async def _do_close(
-        self, exception: Optional[Exception] = None, change_status: bool = True
+        self,
+        exception: Optional[Exception] = None,
+        change_status: bool = True,
+        silent: bool = False,
     ) -> None:
         raise NotImplementedError()
 
