@@ -1,3 +1,4 @@
+from .client import Client
 from .commands import NSQCommands
 from .connection import TCPConnection
 from .connection_status import ConnectionStatus
@@ -14,4 +15,5 @@ __all__ = (
     "FrameType",
     "ConnectionStatus",
     "NSQCommands",
+    "Client",
 )
