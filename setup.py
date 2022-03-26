@@ -34,6 +34,7 @@ setup(
     description="Written with native Asyncio NSQ package",
     long_description=long_description,
     long_description_content_type="text/markdown",
+    python_requires=">=3.6",
     classifiers=classifiers,
     author="LiST",
     author_email="support@list.family",
