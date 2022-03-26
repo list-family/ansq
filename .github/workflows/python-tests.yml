@@ -22,6 +22,7 @@ jobs:
           - 3.6
           - 3.7
           - 3.8
+          - 3.9
         nsq-version:
           - "nsq-1.1.0.linux-amd64.go1.10.3"
           - "nsq-1.2.0.linux-amd64.go1.12.9"
