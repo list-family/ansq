@@ -1,9 +1,11 @@
 import asyncio
+import inspect
 import os
 import shutil
 import signal
 import time
 from asyncio.subprocess import Process
+from typing import Awaitable, Callable, Union
 
 import async_generator
 import pytest
@@ -114,3 +116,33 @@ def create_nsqd(tmp_path):
 async def nsqd(create_nsqd) -> AsyncNSQD:
     async with create_nsqd() as nsqd:
         yield nsqd
+
+
+@pytest.fixture
+def wait_for():
+    """ Wait for a predicate with a timeout."""
+
+    async def inner(
+        predicate: Union[Callable[..., bool], Callable[..., Awaitable[bool]]],
+        timeout: float = 5.0,
+        sleep_time: float = 0.1,
+    ):
+        __tracebackhide__ = True
+
+        start = time.time()
+
+        while True:
+            predicate_result = (
+                await predicate()
+                if inspect.iscoroutinefunction(predicate)
+                else predicate()
+            )
+            if predicate_result:
+                return
+
+            if time.time() - start > timeout:  # pragma: no cover
+                raise AssertionError("failed to wait for predicate")
+
+            await asyncio.sleep(sleep_time)
+
+    return inner

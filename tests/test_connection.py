@@ -37,3 +37,18 @@ async def test_reconnect_while_connected():
 
     await nsq.close()
     assert nsq.status.is_closed
+
+
+@pytest.mark.asyncio
+async def test_auto_reconnect(nsqd, wait_for):
+    nsq = await open_connection(auto_reconnect=True)
+    assert nsq.status.is_connected
+
+    await nsqd.stop()
+    await wait_for(lambda: nsq.status.is_reconnecting)
+
+    await nsqd.start()
+    await wait_for(lambda: nsq.status.is_connected)
+
+    await nsq.close()
+    assert nsq.status.is_closed

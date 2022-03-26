@@ -25,6 +25,11 @@ from ansq.tcp.types import TCPConnection as NSQConnectionBase
 from ansq.typedefs import TCPResponse
 from ansq.utils import truncate_text, validate_topic_channel_name
 
+# Auto reconnect settings
+AUTO_RECONNECT_INITIAL_INTERVAL = 2
+AUTO_RECONNECT_MAX_INTERVAL = 2048
+AUTO_RECONNECT_PROGRESSION_RATIO = 2
+
 
 class NSQConnection(NSQConnectionBase):
     async def connect(self) -> bool:
@@ -59,7 +64,7 @@ class NSQConnection(NSQConnectionBase):
         self.logger.debug(f"Reconnecting to {self.endpoint}...")
         self._status = ConnectionStatus.RECONNECTING
 
-        await self._do_close(change_status=False)
+        await self._do_close(change_status=False, silent=True)
         try:
             await self.connect()
             await self.identify()
@@ -81,8 +86,42 @@ class NSQConnection(NSQConnectionBase):
         self._status = ConnectionStatus.CONNECTED
         return True
 
+    async def _do_auto_reconnect(
+        self, interval: int = AUTO_RECONNECT_INITIAL_INTERVAL
+    ) -> None:
+        """Call ``reconnect()`` method. If failed, sleep and try again."""
+        # Reconnect silently
+        try:
+            reconnected = await self.reconnect()
+        except Exception as exc:
+            await self._do_close(exc, change_status=False, silent=True)
+            reconnected = False
+
+        # Return early if succeeded
+        if reconnected:
+            return
+
+        # Don't sleep more than max interval
+        if interval > AUTO_RECONNECT_MAX_INTERVAL:
+            interval = AUTO_RECONNECT_MAX_INTERVAL
+
+        self.logger.debug(
+            "Failed to reconnect to %s. Wait for %s seconds ...",
+            self.endpoint,
+            interval,
+        )
+
+        # Reconnection is failed - sleep and schedule new reconnect
+        await asyncio.sleep(interval)
+        self._reconnect_task = self._loop.create_task(
+            self._do_auto_reconnect(interval * AUTO_RECONNECT_PROGRESSION_RATIO),
+        )
+
     async def _do_close(
-        self, exception: Optional[Exception] = None, change_status: bool = True
+        self,
+        exception: Optional[Exception] = None,
+        change_status: bool = True,
+        silent: bool = False,
     ) -> None:
         if self.is_closed or self.status.is_init or self.status.is_closing:
             return
@@ -90,14 +129,15 @@ class NSQConnection(NSQConnectionBase):
         if change_status:
             self._status = ConnectionStatus.CLOSING
 
-        if exception:
-            self.logger.error(
-                "Connection {} is closing due an error: {}".format(
-                    self.endpoint, exception,
-                ),
-            )
-        else:
-            self.logger.debug(f"Connection {self.endpoint} is closing...")
+        if not silent:
+            if exception:
+                self.logger.error(
+                    "Connection {} is closing due an error: {}".format(
+                        self.endpoint, exception,
+                    ),
+                )
+            else:
+                self.logger.debug(f"Connection {self.endpoint} is closing...")
 
         if self.is_subscribed and change_status:
             self._is_subscribed = False
@@ -274,9 +314,7 @@ class NSQConnection(NSQConnectionBase):
         self.logger.info("Lost connection to NSQ")
         if self._auto_reconnect:
             await asyncio.sleep(1)
-            self._reconnect_task = self._loop.create_task(
-                self.reconnect(raise_error=False),
-            )
+            self._reconnect_task = self._loop.create_task(self._do_auto_reconnect())
         else:
             await self._do_close(OSError("Lost connection to NSQ"))
 

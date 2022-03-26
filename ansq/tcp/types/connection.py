@@ -165,7 +165,10 @@ class TCPConnection(abc.ABC):
 
     @abc.abstractmethod
     async def _do_close(
-        self, exception: Optional[Exception] = None, change_status: bool = True
+        self,
+        exception: Optional[Exception] = None,
+        change_status: bool = True,
+        silent: bool = False,
     ) -> None:
         raise NotImplementedError()
 
