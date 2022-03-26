@@ -25,6 +25,11 @@ from ansq.tcp.types import TCPConnection as NSQConnectionBase
 from ansq.typedefs import TCPResponse
 from ansq.utils import truncate_text, validate_topic_channel_name
 
+# Auto reconnect settings
+AUTO_RECONNECT_INITIAL_INTERVAL = 2
+AUTO_RECONNECT_MAX_INTERVAL = 2048
+AUTO_RECONNECT_PROGRESSION_RATIO = 2
+
 
 class NSQConnection(NSQConnectionBase):
     async def connect(self) -> bool:
@@ -81,7 +86,9 @@ class NSQConnection(NSQConnectionBase):
         self._status = ConnectionStatus.CONNECTED
         return True
 
-    async def _do_auto_reconnect(self) -> None:
+    async def _do_auto_reconnect(
+        self, interval: int = AUTO_RECONNECT_INITIAL_INTERVAL
+    ) -> None:
         """Call ``reconnect()`` method. If failed, sleep and try again."""
         # Reconnect silently
         try:
@@ -94,14 +101,21 @@ class NSQConnection(NSQConnectionBase):
         if reconnected:
             return
 
-        # Reconnection is failed - schedule new reconnect
+        # Don't sleep more than max interval
+        if interval > AUTO_RECONNECT_MAX_INTERVAL:
+            interval = AUTO_RECONNECT_MAX_INTERVAL
+
         self.logger.debug(
             "Failed to reconnect to %s. Wait for %s seconds ...",
             self.endpoint,
-            self._auto_reconnect_interval,
+            interval,
         )
-        await asyncio.sleep(self._auto_reconnect_interval / 1000)
-        self._reconnect_task = self._loop.create_task(self._do_auto_reconnect())
+
+        # Reconnection is failed - sleep and schedule new reconnect
+        await asyncio.sleep(interval)
+        self._reconnect_task = self._loop.create_task(
+            self._do_auto_reconnect(interval * AUTO_RECONNECT_PROGRESSION_RATIO),
+        )
 
     async def _do_close(
         self,
@@ -500,7 +514,6 @@ async def open_connection(
     on_exception: Callable = None,
     loop: AbstractEventLoop = None,
     auto_reconnect: bool = True,
-    auto_reconnect_interval: int = 15000,
     heartbeat_interval: int = 30000,
     feature_negotiation: bool = True,
     tls_v1: bool = False,
@@ -519,7 +532,6 @@ async def open_connection(
         on_exception=on_exception,
         loop=loop,
         auto_reconnect=auto_reconnect,
-        auto_reconnect_interval=auto_reconnect_interval,
         heartbeat_interval=heartbeat_interval,
         feature_negotiation=feature_negotiation,
         tls_v1=tls_v1,
