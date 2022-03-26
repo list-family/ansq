@@ -1,6 +1,7 @@
 import pytest
 
 from ansq import create_reader, open_connection
+from ansq.tcp.reader import Reader
 
 pytestmark = pytest.mark.asyncio
 
@@ -16,12 +17,20 @@ async def test_create_reader(nsqd):
         topic="foo", channel="bar", nsqd_tcp_addresses=[nsqd.tcp_address],
     )
 
-    open_connections = [conn for conn in reader.connections if conn.is_connected]
-    assert len(open_connections) == 1
-
     assert reader.topic == "foo"
     assert reader.channel == "bar"
-    assert reader.max_in_flight == len(open_connections)
+    assert reader.max_in_flight == 1
+
+    await reader.close()
+
+
+async def test_connect_reader(nsqd):
+    reader = Reader(topic="foo", channel="bar", nsqd_tcp_addresses=[nsqd.tcp_address])
+    assert not reader.connections
+
+    await reader.connect()
+    open_connections = [conn for conn in reader.connections if conn.is_connected]
+    assert len(open_connections) == 1
 
     await reader.close()
 

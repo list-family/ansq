@@ -1,11 +1,8 @@
 import abc
-from typing import TYPE_CHECKING, Any, Dict, Mapping, Sequence, Tuple, TypeVar
+from typing import TYPE_CHECKING, Any, Dict, Mapping, Sequence, Tuple
 
 if TYPE_CHECKING:
     from ansq.tcp.connection import NSQConnection
-
-
-_T = TypeVar("_T", bound="Client")
 
 
 class Client(abc.ABC):
@@ -23,16 +20,14 @@ class Client(abc.ABC):
         if not self._nsqd_tcp_addresses:
             raise ValueError("nsqd_tcp_addresses must be specified")
 
-    # TODO: rename to connect
-    async def init(self: _T) -> _T:
-        """Initialize and connect to nsqd addresses."""
+    async def connect(self) -> None:
+        """Connect to nsqd addresses."""
         for address in self._nsqd_tcp_addresses:
             try:
                 host, port = address.split(":")
             except ValueError:
                 raise ValueError(f"Invalid TCP address: {address}")
             await self._connect_to_nsqd(host=host, port=int(port))
-        return self
 
     async def close(self) -> None:
         """Close all connections."""

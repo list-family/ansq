@@ -60,8 +60,9 @@ class Writer(Client):
 async def create_writer(
     nsqd_tcp_addresses: Sequence[str], connection_options: Mapping[str, Any] = None,
 ) -> Writer:
-    """Return created and initialized writer."""
+    """Return created and connected writer."""
     writer = Writer(
         nsqd_tcp_addresses=nsqd_tcp_addresses, connection_options=connection_options,
     )
-    return await writer.init()
+    await writer.connect()
+    return writer

@@ -110,11 +110,12 @@ async def create_reader(
     nsqd_tcp_addresses: Sequence[str],
     connection_options: Mapping[str, Any] = None,
 ) -> Reader:
-    """Return created and initialized reader."""
+    """Return created and connected reader."""
     reader = Reader(
         topic=topic,
         channel=channel,
         nsqd_tcp_addresses=nsqd_tcp_addresses,
         connection_options=connection_options,
     )
-    return await reader.init()
+    await reader.connect()
+    return reader

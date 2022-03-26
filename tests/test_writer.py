@@ -1,6 +1,7 @@
 import pytest
 
 from ansq import create_reader, create_writer
+from ansq.tcp.writer import Writer
 
 pytestmark = pytest.mark.asyncio
 
@@ -14,6 +15,17 @@ async def nsqd2(tmp_path, create_nsqd):
 async def test_create_writer(nsqd):
     writer = await create_writer(nsqd_tcp_addresses=[nsqd.tcp_address])
 
+    open_connections = [conn for conn in writer.connections if conn.is_connected]
+    assert len(open_connections) == 1
+
+    await writer.close()
+
+
+async def test_connect_writer(nsqd):
+    writer = Writer(nsqd_tcp_addresses=[nsqd.tcp_address])
+    assert not writer.connections
+
+    await writer.connect()
     open_connections = [conn for conn in writer.connections if conn.is_connected]
     assert len(open_connections) == 1
 
