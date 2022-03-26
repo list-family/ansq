@@ -1,5 +1,6 @@
+import asyncio
 import json
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Optional
 
 import aiohttp
 
@@ -16,9 +17,13 @@ class NSQHTTPConnection:
     """XXX"""
 
     def __init__(
-        self, host: str = "127.0.0.1", port: int = 4151, *, loop: "AbstractEventLoop",
+        self,
+        host: str = "127.0.0.1",
+        port: int = 4151,
+        *,
+        loop: Optional["AbstractEventLoop"] = None,
     ) -> None:
-        self._loop = loop
+        self._loop = loop or asyncio.get_event_loop()
         self._endpoint = (host, port)
         self._base_url = "http://{}:{}/".format(*self._endpoint)
 

@@ -12,15 +12,8 @@ on:
 
 jobs:
   test:
-    name: ${{ matrix.os }} / Python ${{ matrix.python-version }}
+    name: ${{ matrix.os }} / ${{ matrix.nsq-version }} / Python ${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}-latest
-    services:
-      nsqd:
-        image: nsqio/nsq
-        options: --entrypoint /nsqd
-        ports:
-          - 4150:4150
-          - 4151:4151
     strategy:
       matrix:
         os:
@@ -29,11 +22,21 @@ jobs:
           - 3.6
           - 3.7
           - 3.8
+        nsq-version:
+          - "nsq-1.1.0.linux-amd64.go1.10.3"
+          - "nsq-1.2.0.linux-amd64.go1.12.9"
+          - "nsq-1.2.1.linux-amd64.go1.16.6"
     env:
       PY_COLORS: 1
       PYTEST_ADDOPTS: --cov-report=xml
     steps:
       - uses: actions/checkout@master
+      - name: Download NSQ
+        run: |
+          curl -sSL "http://bitly-downloads.s3.amazonaws.com/nsq/${{matrix.nsq-version}}.tar.gz" \
+                    | tar -xzv --strip-components=1
+          sudo ln -s ./bin/nsqd /bin/nsqd
+          ./bin/nsqd --version
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v2
         with:
@@ -43,7 +46,9 @@ jobs:
       - name: Prepare test environment
         run: tox --notest
       - name: Test
-        run: tox
+        run: |
+          export PATH=bin:$PATH
+          tox
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1.0.13
         with:
