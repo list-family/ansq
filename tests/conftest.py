@@ -140,7 +140,7 @@ def wait_for():
             if predicate_result:
                 return
 
-            if time.time() - start > timeout:
+            if time.time() - start > timeout:  # pragma: no cover
                 raise AssertionError("failed to wait for predicate")
 
             await asyncio.sleep(sleep_time)
