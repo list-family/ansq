@@ -5,8 +5,7 @@ import shutil
 import signal
 import time
 from asyncio.subprocess import Process
-from collections import Callable
-from typing import Awaitable, Union
+from typing import Awaitable, Callable, Union
 
 import async_generator
 import pytest
@@ -124,8 +123,8 @@ def wait_for():
     """ Wait for a predicate with a timeout."""
 
     async def inner(
-        predicate: Callable[[], Union[bool, Awaitable[bool]]],
-        timeout: float = 5,
+        predicate: Union[Callable[..., bool], Callable[..., Awaitable[bool]]],
+        timeout: float = 5.0,
         sleep_time: float = 0.1,
     ):
         __tracebackhide__ = True
