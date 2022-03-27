@@ -43,19 +43,6 @@ class Writer(Client):
         )
         return random.choice(open_connections)
 
-    async def _connect_to_nsqd(self, host: str, port: int) -> None:
-        """Connect to nsqd by given host and port."""
-
-        connection = NSQConnection(host=host, port=port, **self._connection_options)
-
-        if connection.id in self._connections:
-            return
-
-        await connection.connect()
-        await connection.identify()
-
-        self._connections[connection.id] = connection
-
 
 async def create_writer(
     nsqd_tcp_addresses: Sequence[str], connection_options: Mapping[str, Any] = None,

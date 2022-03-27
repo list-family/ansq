@@ -1,10 +1,10 @@
 import asyncio
 from typing import TYPE_CHECKING, Any, AsyncIterator, Mapping, Optional, Sequence
 
-from ansq.tcp.connection import NSQConnection
 from ansq.tcp.types import Client
 
 if TYPE_CHECKING:
+    from ansq.tcp.connection import NSQConnection
     from ansq.tcp.types import NSQMessage
 
 
@@ -28,6 +28,7 @@ class Reader(Client):
 
         # Common message queue for all connections
         self._message_queue: "asyncio.Queue[Optional[NSQMessage]]" = asyncio.Queue()
+        self._connection_options["message_queue"] = self._message_queue
 
     async def messages(self) -> AsyncIterator["NSQMessage"]:
         """Return messages from message queue."""
@@ -81,23 +82,11 @@ class Reader(Client):
         """
         raise NotImplementedError("Update max_in_flight not implemented yet")
 
-    async def _connect_to_nsqd(self, host: str, port: int) -> None:
-        """Connect to nsqd by given host and port."""
-        connection = NSQConnection(
-            host=host,
-            port=port,
-            message_queue=self._message_queue,
-            **self._connection_options,
-        )
-
-        if connection.id in self._connections:
-            return
-
-        await connection.connect()
-        await connection.identify()
+    async def connect_to_nsqd(self, host: str, port: int) -> "NSQConnection":
+        """Connect, identify and subscribe to nsqd by given host and port."""
+        connection = await super().connect_to_nsqd(host=host, port=port)
         await connection.subscribe(topic=self._topic, channel=self._channel)
-
-        self._connections[connection.id] = connection
+        return connection
 
     @property
     def _is_auto_reconnect_enabled(self) -> bool:
