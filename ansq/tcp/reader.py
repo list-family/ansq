@@ -66,7 +66,7 @@ class Reader(Client):
 
     @property
     def max_in_flight(self) -> int:
-        """Update 'max_in_flight' number.
+        """Return 'max_in_flight' number.
 
         Currently, it equals to number of current connections where every connection
         has RDY=1.
