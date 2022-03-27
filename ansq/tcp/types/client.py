@@ -5,7 +5,7 @@ if TYPE_CHECKING:
 
 
 class Client:
-    """A basic interface for reader and writer."""
+    """Base class for reader and writer."""
 
     def __init__(
         self,
