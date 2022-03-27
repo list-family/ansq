@@ -41,8 +41,9 @@ class Client:
 
         connection = NSQConnection(host=host, port=port, **self._connection_options)
 
-        if connection.id in self._connections:
-            return connection
+        existing_connection = self._connections.get(connection.id)
+        if existing_connection is not None:
+            return existing_connection
 
         await connection.connect()
         await connection.identify()
