@@ -8,15 +8,14 @@ from typing import (
     AsyncIterator,
     Dict,
     List,
-    Mapping,
     NamedTuple,
     NoReturn,
     Optional,
-    Sequence,
+    Sequence
 )
 
 from ansq.http import NsqLookupd
-from ansq.tcp.types import Client
+from ansq.tcp.types import Client, ConnectionOptions
 from ansq.utils import get_logger
 
 if TYPE_CHECKING:
@@ -35,9 +34,8 @@ class Reader(Client):
         lookupd_http_addresses: Optional[Sequence[str]] = None,
         lookupd_poll_interval: float = 60000,
         lookupd_poll_jitter: float = 0.3,
-        connection_options: Mapping[str, Any] = None,
+        connection_options: ConnectionOptions = ConnectionOptions(),
         loop: AbstractEventLoop = None,
-        debug: bool = False,
     ):
         if not any((nsqd_tcp_addresses, lookupd_http_addresses)):
             raise ValueError(
@@ -47,7 +45,6 @@ class Reader(Client):
         super().__init__(
             nsqd_tcp_addresses=nsqd_tcp_addresses or [],
             connection_options=connection_options,
-            debug=debug,
         )
 
         self._topic = topic
@@ -57,7 +54,7 @@ class Reader(Client):
 
         # Common message queue for all connections
         self._message_queue: "asyncio.Queue[Optional[NSQMessage]]" = asyncio.Queue()
-        self.connection_options["message_queue"] = self._message_queue
+        self.connection_options.message_queue = self._message_queue
 
         # Init lookupd
         if lookupd_http_addresses:
@@ -67,7 +64,7 @@ class Reader(Client):
                 poll_interval=lookupd_poll_interval,
                 poll_jitter=lookupd_poll_jitter,
                 loop=self._loop,
-                debug=debug,
+                debug=self.connection_options.debug,
             )
 
     async def connect(self) -> None:
@@ -150,7 +147,7 @@ class Reader(Client):
 
     @property
     def _is_auto_reconnect_enabled(self) -> bool:
-        return self._orig_connection_options.get("auto_reconnect", True)
+        return self.connection_options.auto_reconnect
 
     async def close(self) -> None:
         """Close all connections."""
@@ -323,8 +320,7 @@ async def create_reader(
     lookupd_http_addresses: Sequence[str] = None,
     lookupd_poll_interval: float = 60000,
     lookupd_poll_jitter: float = 0.3,
-    connection_options: Mapping[str, Any] = None,
-    debug: bool = False,
+    connection_options: ConnectionOptions = ConnectionOptions(),
 ) -> Reader:
     """Return created and connected reader."""
     reader = Reader(
@@ -335,7 +331,6 @@ async def create_reader(
         lookupd_poll_interval=lookupd_poll_interval,
         lookupd_poll_jitter=lookupd_poll_jitter,
         connection_options=connection_options,
-        debug=debug,
     )
     await reader.connect()
     return reader

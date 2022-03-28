@@ -1,16 +1,46 @@
 import abc
 import asyncio
+import itertools
 import logging
+import warnings
 from asyncio.events import AbstractEventLoop
 from asyncio.streams import StreamReader, StreamWriter
 from collections import deque
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Callable, Deque, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Callable, Deque, Dict, Optional, Tuple, Union
+
+import attr
 
 from ansq.typedefs import TCPResponse
 
 if TYPE_CHECKING:
     from ansq.tcp.types import ConnectionStatus, NSQMessage, NSQMessageSchema
+
+
+@attr.define(auto_attribs=True, kw_only=True)
+class ConnectionFeatures:
+    deflate: bool = False
+    deflate_level: int = 6
+    feature_negotiation: bool = True
+    heartbeat_interval: int = 30000
+    sample_rate: int = 0
+    snappy: bool = False
+    tls_v1: bool = False
+
+
+@attr.define(auto_attribs=True, kw_only=True)
+class ConnectionOptions:
+    message_queue: Optional["asyncio.Queue[Optional[NSQMessage]]"] = None
+    # TODO: define more strict type for `on_message`
+    on_message: Optional[Callable] = None
+    # TODO: define more strict type for `on_exception`
+    on_exception: Optional[Callable] = None
+    on_close: Optional[Callable[["TCPConnection"], None]] = None
+    loop: Optional[AbstractEventLoop] = None
+    auto_reconnect: bool = True
+    features: ConnectionFeatures = ConnectionFeatures()
+    debug: bool = False
+    logger: Optional[logging.Logger] = None
 
 
 class TCPConnection(abc.ABC):
@@ -21,57 +51,99 @@ class TCPConnection(abc.ABC):
         host: str = "localhost",
         port: int = 4150,
         *,
-        message_queue: asyncio.Queue = None,
-        on_message: Callable = None,
-        on_exception: Callable = None,
-        on_close: Callable[["TCPConnection"], None] = None,
-        loop: AbstractEventLoop = None,
-        auto_reconnect: bool = True,
-        heartbeat_interval: int = 30000,
-        feature_negotiation: bool = True,
-        tls_v1: bool = False,
-        snappy: bool = False,
-        deflate: bool = False,
-        deflate_level: int = 6,
-        sample_rate: int = 0,
-        debug: bool = False,
-        logger: logging.Logger = None,
+        connection_options: ConnectionOptions = ConnectionOptions(),
+        message_queue: Optional[asyncio.Queue] = None,
+        on_message: Optional[Callable] = None,
+        on_exception: Optional[Callable] = None,
+        on_close: Optional[Callable[["TCPConnection"], None]] = None,
+        loop: Optional[AbstractEventLoop] = None,
+        auto_reconnect: Optional[bool] = None,
+        deflate: Optional[bool] = None,
+        deflate_level: Optional[int] = None,
+        tls_v1: Optional[bool] = None,
+        snappy: Optional[bool] = None,
+        sample_rate: Optional[int] = None,
+        heartbeat_interval: Optional[int] = None,
+        feature_negotiation: Optional[bool] = None,
+        debug: Optional[bool] = None,
+        logger: Optional[logging.Logger] = None,
     ):
         from ansq.tcp.protocol import Reader
         from ansq.tcp.types import ConnectionStatus
         from ansq.utils import get_logger
 
+        deprecated_kw_options: Dict[str, Any] = {
+            "message_queue": message_queue,
+            "on_message": on_message,
+            "on_exception": on_exception,
+            "on_close": on_close,
+            "loop": loop,
+            "auto_reconnect": auto_reconnect,
+            "debug": debug,
+            "logger": logger,
+        }
+        deprecated_kw_features: Dict[str, Any] = {
+            "deflate": deflate,
+            "deflate_level": deflate_level,
+            "feature_negotiation": feature_negotiation,
+            "heartbeat_interval": heartbeat_interval,
+            "sample_rate": sample_rate,
+            "snappy": snappy,
+            "tls_v1": tls_v1,
+        }
+        if any(
+            arg is not None
+            for arg in itertools.chain(
+                deprecated_kw_options.values(), deprecated_kw_features.values()
+            )
+        ):
+            warnings.warn(
+                message=(
+                    "Passing connection options to `TCPConnection` using keyword "
+                    "arguments is deprecated: use `ConnectionOptions` structure instead"
+                ),
+                category=DeprecationWarning,
+            )
+            connection_features = attr.evolve(
+                ConnectionFeatures(),
+                **{
+                    name: value
+                    for name, value in deprecated_kw_features.items()
+                    if value is not None
+                },
+            )
+            deprecated_kw_options["features"] = connection_features
+            connection_options = attr.evolve(
+                connection_options,
+                **{
+                    name: value
+                    for name, value in deprecated_kw_options.items()
+                    if value is not None
+                },
+            )
+        self._options: ConnectionOptions = connection_options
+
         self.instance_number = self.__class__.instances_count
         self.__class__.instances_count += 1
 
         self._host, self._port = host, port
-        self._loop: AbstractEventLoop = loop or asyncio.get_event_loop()
-        self._debug = debug
-        self.logger = logger or get_logger(
-            debug, f"{self._host}:{self._port}.{self.instance_number}"
+        self._loop: AbstractEventLoop = self._options.loop or asyncio.get_event_loop()
+        self._debug = self._options.debug
+        self.logger = self._options.logger or get_logger(
+            self._debug, f"{self._host}:{self._port}.{self.instance_number}"
         )
 
-        self._message_queue: asyncio.Queue[Optional["NSQMessage"]] = (
-            message_queue or asyncio.Queue()
+        self._message_queue: "asyncio.Queue[Optional[NSQMessage]]" = (
+            self._options.message_queue or asyncio.Queue()
         )
         self._status: ConnectionStatus = ConnectionStatus.INIT
         self._reader: Optional[StreamReader] = None
         self._writer: Optional[StreamWriter] = None
         self._reader_task: Optional[asyncio.Task] = None
         self._reconnect_task: Optional[asyncio.Task] = None
-        self._auto_reconnect = auto_reconnect
+        self._auto_reconnect = self._options.auto_reconnect
 
         self._parser = Reader()
-
-        self._config: Union[dict, str] = {
-            "deflate": deflate,
-            "deflate_level": deflate_level,
-            "sample_rate": sample_rate,
-            "snappy": snappy,
-            "tls_v1": tls_v1,
-            "heartbeat_interval": heartbeat_interval,
-            "feature_negotiation": feature_negotiation,
-        }
 
         self._last_message_time: Optional[datetime] = None
         # Next queue is used for nsq commands
@@ -80,16 +152,16 @@ class TCPConnection(abc.ABC):
         ] = deque()
         # Mark connection in upgrading state to ssl socket
         self._is_upgrading = False
-        # Number of received but not acked or req messages
+        # Number of received but not acknowledged or req messages
         self._in_flight = 0
         self._secret: Optional[str] = None
         self._is_auth_required = False
         self._is_authorized = False
 
         # Handlers
-        self._on_message = on_message
-        self._on_exception = on_exception
-        self._on_close = on_close
+        self._on_message = self._options.on_message
+        self._on_exception = self._options.on_exception
+        self._on_close = self._options.on_close
 
         # Reader setup
         self._topic: Optional[str] = None
@@ -195,7 +267,11 @@ class TCPConnection(abc.ABC):
 
     @abc.abstractmethod
     async def identify(
-        self, config: Optional[Union[dict, str]] = None, **kwargs: Any
+        self,
+        config: Optional[Union[dict, str]] = None,
+        *,
+        features: Optional[ConnectionFeatures] = None,
+        **kwargs: Any,
     ) -> TCPResponse:
         raise NotImplementedError()
 

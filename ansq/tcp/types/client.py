@@ -1,5 +1,7 @@
 from typing import TYPE_CHECKING, Any, Dict, Mapping, Optional, Sequence, Tuple
 
+import attr
+
 if TYPE_CHECKING:
     from ansq.tcp.connection import NSQConnection
 
@@ -10,15 +12,15 @@ class Client:
     def __init__(
         self,
         nsqd_tcp_addresses: Sequence[str],
-        connection_options: Optional[Mapping[str, Any]] = None,
+        connection_options: ConnectionOptions = ConnectionOptions(),
         debug: bool = False,
     ):
         self._nsqd_tcp_addresses = nsqd_tcp_addresses
-        self._orig_connection_options = connection_options or {}
-        self.connection_options = dict(self._orig_connection_options)
 
         if debug:
-            self.connection_options["debug"] = True
+            connection_options = attr.evolve(connection_options, debug=True)
+
+        self.connection_options = connection_options
 
         self._connections: Dict[str, NSQConnection] = {}
 

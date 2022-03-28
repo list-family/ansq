@@ -5,6 +5,7 @@ from setuptools import find_packages, setup
 PY_VER = sys.version_info
 install_requires = [
     "aiohttp>=1.0.0",
+    "attrs>=21.4.0,<22.0.0",
 ]
 
 classifiers = [

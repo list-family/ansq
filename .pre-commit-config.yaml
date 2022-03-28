@@ -33,3 +33,6 @@ repos:
           tests/ |
           examples/
         )
+      additional_dependencies:
+        - "aiohttp>=1.0.0"
+        - "attrs>=21.4.0,<22.0.0"
