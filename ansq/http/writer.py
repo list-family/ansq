@@ -39,25 +39,25 @@ class NSQDHTTPWriter(NSQHTTPConnection):
 
     async def create_topic(self, topic: str) -> HTTPResponse:
         resp = await self.perform_request(
-            "POST", "topic/create", {"topic": topic}, None,
+            "POST", "topic/create", {"topic": topic}, None
         )
         return resp
 
     async def delete_topic(self, topic: str) -> HTTPResponse:
         resp = await self.perform_request(
-            "POST", "topic/delete", {"topic": topic}, None,
+            "POST", "topic/delete", {"topic": topic}, None
         )
         return resp
 
     async def create_channel(self, topic: str, channel: str) -> HTTPResponse:
         resp = await self.perform_request(
-            "POST", "channel/create", {"topic": topic, "channel": channel}, None,
+            "POST", "channel/create", {"topic": topic, "channel": channel}, None
         )
         return resp
 
     async def delete_channel(self, topic: str, channel: str) -> HTTPResponse:
         resp = await self.perform_request(
-            "POST", "channel/delete", {"topic": topic, "channel": channel}, None,
+            "POST", "channel/delete", {"topic": topic, "channel": channel}, None
         )
         return resp
 
@@ -71,19 +71,19 @@ class NSQDHTTPWriter(NSQHTTPConnection):
 
     async def topic_unpause(self, topic: str) -> HTTPResponse:
         resp = await self.perform_request(
-            "POST", "topic/unpause", {"topic": topic}, None,
+            "POST", "topic/unpause", {"topic": topic}, None
         )
         return resp
 
     async def pause_channel(self, channel: str, topic: str) -> HTTPResponse:
         resp = await self.perform_request(
-            "POST", "channel/pause", {"topic": topic, "channel": channel}, None,
+            "POST", "channel/pause", {"topic": topic, "channel": channel}, None
         )
         return resp
 
     async def unpause_channel(self, channel: str, topic: str) -> HTTPResponse:
         resp = await self.perform_request(
-            "POST", "channel/unpause", {"topic": topic, "channel": channel}, None,
+            "POST", "channel/unpause", {"topic": topic, "channel": channel}, None
         )
         return resp
 
@@ -116,6 +116,6 @@ class NSQDHTTPWriter(NSQHTTPConnection):
         List of nsqlookupd TCP addresses.
         """
         resp = await self.perform_request(
-            "GET", "config/nsqlookupd_tcp_addresses", None, None,
+            "GET", "config/nsqlookupd_tcp_addresses", None, None
         )
         return resp

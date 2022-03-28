@@ -35,7 +35,7 @@ class NSQConnection(NSQConnectionBase):
     async def connect(self) -> bool:
         """Open connection"""
         self._reader, self._writer = await asyncio.open_connection(
-            self._host, self._port,
+            self._host, self._port
         )
 
         self._writer.write(NSQCommands.MAGIC_V2)
@@ -73,7 +73,7 @@ class NSQConnection(NSQConnectionBase):
                 assert self._topic is not None
                 assert self._channel is not None
                 await self.subscribe(
-                    self._topic, self._channel, self.rdy_messages_count,
+                    self._topic, self._channel, self.rdy_messages_count
                 )
         except Exception as e:
             if raise_error:
@@ -133,7 +133,7 @@ class NSQConnection(NSQConnectionBase):
             if exception:
                 self.logger.error(
                     "Connection {} is closing due an error: {}".format(
-                        self.endpoint, exception,
+                        self.endpoint, exception
                     ),
                 )
             else:
@@ -257,7 +257,7 @@ class NSQConnection(NSQConnectionBase):
         config = json.dumps(self._config)
 
         response = await self.execute(
-            NSQCommands.IDENTIFY, data=config, callback=self._start_upgrading,
+            NSQCommands.IDENTIFY, data=config, callback=self._start_upgrading
         )
 
         if response in (NSQCommands.OK, NSQCommands.OK.decode()):
@@ -432,7 +432,7 @@ class NSQConnection(NSQConnectionBase):
     async def rdy(self, messages_count: int = 1) -> None:
         """Update RDY state (indicate you are ready to receive N messages)"""
         assert isinstance(
-            messages_count, int,
+            messages_count, int
         ), "Argument messages_count should be positive integer"
         assert messages_count >= 0, "Argument messages_count should be positive integer"
 

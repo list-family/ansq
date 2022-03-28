@@ -32,7 +32,7 @@ class HTTPConnectionError(TransportError):
 
     def __str__(self) -> str:
         return "HttpConnectionError({}) caused by: {}({})".format(
-            self.error, self.info.__class__.__name__, self.info,
+            self.error, self.info.__class__.__name__, self.info
         )
 
 

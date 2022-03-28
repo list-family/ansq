@@ -101,7 +101,7 @@ def create_nsqd(tmp_path):
         data_path.mkdir(parents=True)
 
         nsqd = AsyncNSQD(
-            host=host, port=port, http_port=http_port, data_path=str(data_path),
+            host=host, port=port, http_port=http_port, data_path=str(data_path)
         )
         try:
             await nsqd.start()
@@ -120,7 +120,7 @@ async def nsqd(create_nsqd) -> AsyncNSQD:
 
 @pytest.fixture
 def wait_for():
-    """ Wait for a predicate with a timeout."""
+    """Wait for a predicate with a timeout."""
 
     async def inner(
         predicate: Union[Callable[..., bool], Callable[..., Awaitable[bool]]],
