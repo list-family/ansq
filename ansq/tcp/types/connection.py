@@ -103,6 +103,10 @@ class TCPConnection(abc.ABC):
         )
 
     @property
+    def id(self) -> str:
+        return f"{self._host}:{self._port}"
+
+    @property
     def status(self) -> "ConnectionStatus":
         return self._status
 
@@ -141,6 +145,11 @@ class TCPConnection(abc.ABC):
     @property
     def is_authorized(self) -> bool:
         return self._is_authorized
+
+    @property
+    def is_connected(self) -> bool:
+        """Return true if connection is connected."""
+        return self.status.is_connected
 
     @property
     def is_closed(self) -> bool:
