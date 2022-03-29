@@ -2,8 +2,6 @@ import sys
 
 from setuptools import find_packages, setup
 
-from ansq import __version__
-
 PY_VER = sys.version_info
 install_requires = [
     "aiohttp>=1.0.0",
@@ -30,7 +28,7 @@ with open("README.md") as f:
 
 setup(
     name="ansq",
-    version=__version__.__version__,
+    version="0.0.18",
     description="Written with native Asyncio NSQ package",
     long_description=long_description,
     long_description_content_type="text/markdown",
