@@ -33,7 +33,7 @@ def validate_topic_channel_name(name: str) -> None:
     :raises AssertionError: Value not matches regex.
     """
     assert re.match(
-        r"^[.a-zA-Z0-9_\-]{2,64}(#ephemeral)?$", name,
+        r"^[.a-zA-Z0-9_\-]{2,64}(#ephemeral)?$", name
     ), "Topic name must matches ^[.a-zA-Z0-9_-]{2,64}+(#ephemeral)?$ regex"
 
 
@@ -163,7 +163,7 @@ def _datetime_to_str(value: datetime) -> str:
 
 
 def get_logger(
-    debug: bool = False, unique_name: Optional[str] = None,
+    debug: bool = False, unique_name: Optional[str] = None
 ) -> logging.Logger:
     """Get the ansq logger.
 

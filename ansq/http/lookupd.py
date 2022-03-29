@@ -60,7 +60,7 @@ class NsqLookupd(NSQHTTPConnection):
         :return:
         """
         resp = await self.perform_request(
-            "POST", "/topic/create", {"topic": topic}, None,
+            "POST", "/topic/create", {"topic": topic}, None
         )
         return resp
 
@@ -71,7 +71,7 @@ class NsqLookupd(NSQHTTPConnection):
         :return:
         """
         resp = await self.perform_request(
-            "POST", "/topic/delete", {"topic": topic}, None,
+            "POST", "/topic/delete", {"topic": topic}, None
         )
         return resp
 
@@ -83,7 +83,7 @@ class NsqLookupd(NSQHTTPConnection):
         :return:
         """
         resp = await self.perform_request(
-            "POST", "/channel/create", {"topic": topic, "channel": channel}, None,
+            "POST", "/channel/create", {"topic": topic, "channel": channel}, None
         )
         return resp
 
@@ -95,7 +95,7 @@ class NsqLookupd(NSQHTTPConnection):
         :return:
         """
         resp = await self.perform_request(
-            "POST", "/channel/delete", {"topic": topic, "channel": channel}, None,
+            "POST", "/channel/delete", {"topic": topic, "channel": channel}, None
         )
         return resp
 
@@ -107,6 +107,6 @@ class NsqLookupd(NSQHTTPConnection):
         :return:
         """
         resp = await self.perform_request(
-            "POST", "delete_channel", {"topic": topic, "node": node}, None,
+            "POST", "delete_channel", {"topic": topic, "node": node}, None
         )
         return resp

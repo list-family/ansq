@@ -71,7 +71,7 @@ async def test_command_without_connection():
     assert nsq.status.is_init
 
     with pytest.raises(
-        AssertionError, match="^You should call `connect` method first$",
+        AssertionError, match="^You should call `connect` method first$"
     ):
         await nsq.pub("test_topic", "test_message")
 
@@ -114,5 +114,5 @@ async def test_command_with_concurrently_closed_connection():
 
     with pytest.raises(ConnectionClosedError, match="^Connection is closed$"):
         await asyncio.wait_for(
-            asyncio.gather(close(), blocking_wait_and_pub()), timeout=1,
+            asyncio.gather(close(), blocking_wait_and_pub()), timeout=1
         )
