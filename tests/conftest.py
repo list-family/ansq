@@ -111,6 +111,7 @@ class NSQD(BaseNSQServer):
         port: int = 4150,
         http_port: int = 4151,
         data_path="/tmp",
+        broadcast_address: Optional[str] = None,
         lookupd_tcp_addresses: Optional[Sequence[str]] = None,
     ) -> None:
         super().__init__(
@@ -119,6 +120,7 @@ class NSQD(BaseNSQServer):
             http_port=http_port,
         )
         self.data_path = data_path
+        self.broadcast_address = broadcast_address
         self.lookupd_tcp_addresses = lookupd_tcp_addresses or []
 
     @property
@@ -132,6 +134,9 @@ class NSQD(BaseNSQServer):
         if self.lookupd_tcp_addresses:
             for address in self.lookupd_tcp_addresses:
                 args.extend(["-lookupd-tcp-address", address])
+
+        if self.broadcast_address:
+            args.extend(["-broadcast-address", self.broadcast_address])
 
         return args
 
@@ -148,7 +153,11 @@ class NSQLookupD(BaseNSQServer):
 def create_nsqd(tmp_path):
     @async_generator.asynccontextmanager
     async def _create_nsqd(
-        host="127.0.0.1", port=4150, http_port=4151, lookupd_tcp_addresses=None
+        host="127.0.0.1",
+        port=4150,
+        http_port=4151,
+        lookupd_tcp_addresses=None,
+        broadcast_address="127.0.0.1",
     ):
         data_path = tmp_path / f"{host}:{port}"
         data_path.mkdir(parents=True)
@@ -159,6 +168,7 @@ def create_nsqd(tmp_path):
             http_port=http_port,
             data_path=str(data_path),
             lookupd_tcp_addresses=lookupd_tcp_addresses,
+            broadcast_address=broadcast_address,
         )
         try:
             await nsqd.start()
