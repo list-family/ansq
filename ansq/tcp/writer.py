@@ -15,11 +15,16 @@ class Writer(Client):
         self,
         nsqd_tcp_addresses: Sequence[str],
         connection_options: Mapping[str, Any] = None,
+        debug: bool = False,
     ):
         super().__init__(
             nsqd_tcp_addresses=nsqd_tcp_addresses,
             connection_options=connection_options,
+            debug=debug,
         )
+
+        if not self._nsqd_tcp_addresses:
+            raise ValueError("nsqd_tcp_addresses must be not empty")
 
     async def pub(self, topic: str, message: Any) -> "TCPResponse":
         """Publish a message to a topic to a random connection."""
@@ -45,11 +50,15 @@ class Writer(Client):
 
 
 async def create_writer(
-    nsqd_tcp_addresses: Sequence[str], connection_options: Mapping[str, Any] = None
+    nsqd_tcp_addresses: Sequence[str],
+    connection_options: Mapping[str, Any] = None,
+    debug: bool = False,
 ) -> Writer:
     """Return created and connected writer."""
     writer = Writer(
-        nsqd_tcp_addresses=nsqd_tcp_addresses, connection_options=connection_options
+        nsqd_tcp_addresses=nsqd_tcp_addresses,
+        connection_options=connection_options,
+        debug=debug,
     )
     await writer.connect()
     return writer

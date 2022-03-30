@@ -90,6 +90,9 @@ class NSQConnection(NSQConnectionBase):
         self, interval: int = AUTO_RECONNECT_INITIAL_INTERVAL
     ) -> None:
         """Call ``reconnect()`` method. If failed, sleep and try again."""
+        if not self._auto_reconnect:
+            return
+
         # Reconnect silently
         try:
             reconnected = await self.reconnect()
@@ -149,6 +152,9 @@ class NSQConnection(NSQConnectionBase):
             self._reader_task.cancel()
             try:
                 await self._reader_task
+            except asyncio.CancelledError:
+                # The task is cancelled - don't log useless exception trace
+                pass
             except Exception as e:
                 self.logger.exception(e)
 
@@ -156,6 +162,9 @@ class NSQConnection(NSQConnectionBase):
             self._reconnect_task.cancel()
             try:
                 await self._reconnect_task
+            except asyncio.CancelledError:
+                # The task is cancelled - don't log useless exception trace
+                pass
             except Exception as e:
                 self.logger.exception(e)
 
@@ -176,6 +185,9 @@ class NSQConnection(NSQConnectionBase):
             self._message_queue.get_nowait()
 
         if change_status:
+            if self._on_close is not None:
+                self._on_close(self)
+
             self._status = ConnectionStatus.CLOSED
             self.logger.debug(f"Connection {self.endpoint} is closed")
 
@@ -311,12 +323,12 @@ class NSQConnection(NSQConnectionBase):
             self._parser.feed(data)
             not self._is_upgrading and await self._read_buffer()
 
-        self.logger.info("Lost connection to NSQ")
+        self.logger.info("Lost connection to NSQ %s", self.endpoint)
         if self._auto_reconnect:
             await asyncio.sleep(1)
             self._reconnect_task = self._loop.create_task(self._do_auto_reconnect())
         else:
-            await self._do_close(OSError("Lost connection to NSQ"))
+            await self._do_close()
 
     async def _parse_data(self) -> bool:
         try:
