@@ -90,7 +90,7 @@ class Reader(Client):
             # One of connection is closed
             if message is None:
                 # Don't close generator if auto-reconnect enabled or lookupd configured
-                if self._is_auto_reconnect_enabled or self._lookupd is not None:
+                if self._lookupd is not None or self._is_auto_reconnect_enabled:
                     continue
                 else:
                     break
