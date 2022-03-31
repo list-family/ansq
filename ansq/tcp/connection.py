@@ -278,9 +278,8 @@ class NSQConnection(NSQConnectionBase):
         If any of `features`, `config`, `kwargs` exist features defined in `__init__`
         method will be ignored.
         """
-        if features is not None:
-            self._options.features = features
-        elif config is not None:
+        # handle deprecated args
+        if config is not None:
             if not isinstance(config, (dict, str)):
                 raise TypeError("Config should be dict type or str")
             warnings.warn(
@@ -291,7 +290,7 @@ class NSQConnection(NSQConnectionBase):
                 category=DeprecationWarning,
             )
             if isinstance(config, dict):
-                self._options.features = ConnectionFeatures(**config)
+                features = ConnectionFeatures(**config)
         elif kwargs:
             warnings.warn(
                 message=(
@@ -300,8 +299,13 @@ class NSQConnection(NSQConnectionBase):
                 ),
                 category=DeprecationWarning,
             )
-            self._options.features = ConnectionFeatures(**kwargs)
+            features = ConnectionFeatures(**kwargs)
 
+        # update options with features passed as arguments to this method
+        if features is not None:
+            self._options = attr.evolve(self._options, features=features)
+
+        # maybe handle `config` argument passed as a string
         if features is None and isinstance(config, str):
             features_data = config
         else:

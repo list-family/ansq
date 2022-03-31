@@ -1,6 +1,8 @@
-from typing import TYPE_CHECKING, Any, Dict, Mapping, Optional, Sequence, Tuple
+from typing import TYPE_CHECKING, Dict, Sequence, Tuple
 
 import attr
+
+from ansq.tcp.types import ConnectionOptions
 
 if TYPE_CHECKING:
     from ansq.tcp.connection import NSQConnection
@@ -42,7 +44,9 @@ class Client:
         """Connect and identify to nsqd by given host and port."""
         from ansq.tcp.connection import NSQConnection
 
-        connection = NSQConnection(host=host, port=port, **self.connection_options)
+        connection = NSQConnection(
+            host=host, port=port, connection_options=self.connection_options
+        )
 
         existing_connection = self._connections.get(connection.id)
         if existing_connection is not None:

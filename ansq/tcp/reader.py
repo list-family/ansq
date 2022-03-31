@@ -11,8 +11,10 @@ from typing import (
     NamedTuple,
     NoReturn,
     Optional,
-    Sequence
+    Sequence,
 )
+
+import attr
 
 from ansq.http import NsqLookupd
 from ansq.tcp.types import Client, ConnectionOptions
@@ -54,7 +56,9 @@ class Reader(Client):
 
         # Common message queue for all connections
         self._message_queue: "asyncio.Queue[Optional[NSQMessage]]" = asyncio.Queue()
-        self.connection_options.message_queue = self._message_queue
+        self.connection_options = attr.evolve(
+            self.connection_options, message_queue=self._message_queue
+        )
 
         # Init lookupd
         if lookupd_http_addresses:
@@ -179,18 +183,17 @@ class Lookupd:
         self._poll_lookup_task: Optional[asyncio.Task] = None
 
         # Keep original on close callback to call it in `self._on_close_connection`
-        self._orig_on_close_callback = self._reader.connection_options.get("on_close")
+        self._reader_on_close = self._reader.connection_options.on_close
 
         # Configure connections specific for lookupd
-        self._reader.connection_options.update(
-            {
-                # Lookupd adds and removes connections itself,
-                # so disable auto-reconnect for each connections.
-                "auto_reconnect": False,
-                # When a connection is closed it should be removed from the reader.
-                # Lookupd would add it later if the producer is up.
-                "on_close": self._on_close_connection,
-            },
+        self._reader.connection_options = attr.evolve(
+            self._reader.connection_options,
+            # Lookupd adds and removes connections itself,
+            # so disable auto-reconnect for each connections.
+            auto_reconnect=False,
+            # When a connection is closed it should be removed from the reader.
+            # Lookupd would add it later if the producer is up.
+            on_close=self._on_close_connection,
         )
 
         # Create lookupd connections
@@ -301,8 +304,8 @@ class Lookupd:
         self._reader.remove_connection(connection)
 
         # Call an original on_close callback if specified
-        if self._orig_on_close_callback is not None:
-            self._orig_on_close_callback(connection)
+        if self._reader_on_close is not None:
+            self._reader_on_close(connection)
 
 
 class Address(NamedTuple):

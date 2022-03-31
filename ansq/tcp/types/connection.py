@@ -6,16 +6,7 @@ from asyncio.events import AbstractEventLoop
 from asyncio.streams import StreamReader, StreamWriter
 from collections import deque
 from datetime import datetime
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Callable,
-    Deque,
-    Mapping,
-    Optional,
-    Tuple,
-    Union,
-)
+from typing import TYPE_CHECKING, Any, Callable, Deque, Mapping, Optional, Tuple, Union
 
 import attr
 
@@ -25,7 +16,7 @@ if TYPE_CHECKING:
     from ansq.tcp.types import ConnectionStatus, NSQMessage, NSQMessageSchema
 
 
-@attr.define(auto_attribs=True, kw_only=True)
+@attr.define(frozen=True, auto_attribs=True, kw_only=True)
 class ConnectionFeatures:
     deflate: bool = False
     deflate_level: int = 6
@@ -36,7 +27,7 @@ class ConnectionFeatures:
     tls_v1: bool = False
 
 
-@attr.define(auto_attribs=True, kw_only=True)
+@attr.define(frozen=True, auto_attribs=True, kw_only=True)
 class ConnectionOptions:
     message_queue: Optional["asyncio.Queue[Optional[NSQMessage]]"] = None
     # TODO: define more strict type for `on_message`
@@ -84,8 +75,9 @@ class TCPConnection(abc.ABC):
         if kwargs:
             warnings.warn(
                 message=(
-                    "Passing connection options to `TCPConnection` using keyword "
-                    "arguments is deprecated: use `ConnectionOptions` structure instead"
+                    f"Passing connection options to `{self.__class__.__name__}` using "
+                    "keyword arguments is deprecated: use `ConnectionOptions` "
+                    "structure instead"
                 ),
                 category=DeprecationWarning,
             )
