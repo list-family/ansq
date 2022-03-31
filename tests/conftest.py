@@ -19,7 +19,6 @@ pytestmark = pytest.mark.asyncio
 class BaseNSQServer(abc.ABC):
     """Base async nsq server."""
 
-    _process: Process
     http_writer_class: Type
 
     def __init__(
@@ -31,6 +30,7 @@ class BaseNSQServer(abc.ABC):
         self.host = host
         self.port = port
         self.http_port = http_port
+        self._process: Optional[Process] = None
 
         if shutil.which(self.command) is None:
             raise RuntimeError(
@@ -66,6 +66,9 @@ class BaseNSQServer(abc.ABC):
 
     async def start(self):
         """Start nsqd in a separate process."""
+        if self._process is not None:
+            return
+
         self._process = await asyncio.create_subprocess_exec(
             self.command, *self.command_args
         )
@@ -73,11 +76,12 @@ class BaseNSQServer(abc.ABC):
 
     async def stop(self):
         """Stop nsqd."""
-        if not hasattr(self, "_process"):
+        if self._process is None:
             return
 
         os.kill(self._process.pid, signal.SIGKILL)
         await self._process.wait()
+        self._process = None
 
     async def _wait_ping(self, timeout: int = 3) -> None:
         """Wait for successful ping to HTTP API, otherwise raise last exception."""

@@ -31,19 +31,21 @@ async def nsqlookupd2(create_nsqlookupd):
         yield nsqlookupd
 
 
-async def test_create_reader_with_lookupd(
-    nsqd, nsqlookupd, nsqd2, nsqlookupd2, wait_for
+@pytest.fixture
+def register_producers():
+    async def _register_producers(*servers):
+        for i, server in enumerate(servers):
+            writer = await create_writer(nsqd_tcp_addresses=[server.tcp_address])
+            response = await writer.pub(topic="foo", message=f"test_message{i}")
+            assert response.is_ok
+            await writer.close()
+
+    return _register_producers
+
+
+async def test_create_reader(
+    nsqlookupd, nsqlookupd2, nsqd, nsqd2, wait_for, register_producers
 ):
-    writer = await create_writer(nsqd_tcp_addresses=[nsqd.tcp_address])
-    response = await writer.pub(topic="foo", message="test_message1")
-    assert response.is_ok
-    await writer.close()
-
-    writer = await create_writer(nsqd_tcp_addresses=[nsqd2.tcp_address])
-    response = await writer.pub(topic="foo", message="test_message2")
-    assert response.is_ok
-    await writer.close()
-
     reader = await create_reader(
         topic="foo",
         channel="bar",
@@ -53,10 +55,61 @@ async def test_create_reader_with_lookupd(
 
     assert reader.topic == "foo"
     assert reader.channel == "bar"
+    assert len(reader.connections) == 0
 
+    await register_producers(nsqd, nsqd2)
     await wait_for(lambda: len(reader.connections) == 2)
 
-    assert len(reader.connections) == 2
-    assert reader.max_in_flight == 2
+    await reader.close()
+
+
+async def test_create_connection(nsqlookupd, wait_for, nsqd, register_producers):
+    reader = await create_reader(
+        topic="foo",
+        channel="bar",
+        lookupd_http_addresses=[nsqlookupd.http_address],
+        lookupd_poll_interval=100,
+    )
+    assert len(reader.connections) == 0
+
+    await register_producers(nsqd)
+    await wait_for(lambda: len(reader.connections) == 1)
+
+    await reader.close()
+
+
+async def test_close_connection(nsqlookupd, nsqd, wait_for, register_producers):
+    reader = await create_reader(
+        topic="foo",
+        channel="bar",
+        lookupd_http_addresses=[nsqlookupd.http_address],
+        lookupd_poll_interval=100,
+    )
+
+    await register_producers(nsqd)
+    await wait_for(lambda: len(reader.connections) == 1)
+
+    await nsqd.stop()
+    await wait_for(lambda: len(reader.connections) == 0)
+
+    await reader.close()
+
+
+async def test_restore_connection(nsqlookupd, nsqd, wait_for, register_producers):
+    reader = await create_reader(
+        topic="foo",
+        channel="bar",
+        lookupd_http_addresses=[nsqlookupd.http_address],
+        lookupd_poll_interval=100,
+    )
+
+    await register_producers(nsqd)
+    await wait_for(lambda: len(reader.connections) == 1)
+
+    await nsqd.stop()
+    await wait_for(lambda: len(reader.connections) == 0)
+
+    await nsqd.start()
+    await wait_for(lambda: len(reader.connections) == 1)
 
     await reader.close()
