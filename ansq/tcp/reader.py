@@ -171,6 +171,7 @@ class Lookupd:
         self._loop = loop or asyncio.get_event_loop()
         self._query_lookupd_attempts = 0
         self._logger = get_logger(debug, "lookupd")
+        self._debug = debug
         self._poll_lookup_task: Optional[asyncio.Task] = None
 
         # Keep original on close callback to call it in `self._on_close_connection`
@@ -206,6 +207,7 @@ class Lookupd:
                 "Failed to query lookupd %s due to: %s",
                 lookupd_connection,
                 exc,
+                exc_info=exc if self._debug else False,
             )
 
     async def poll_lookup(self) -> NoReturn:
