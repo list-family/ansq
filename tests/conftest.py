@@ -17,7 +17,7 @@ pytestmark = pytest.mark.asyncio
 
 
 class BaseNSQServer(abc.ABC):
-    """Base async nsq server."""
+    """Base async nsq server. Required installed NSQ binaries."""
 
     http_writer_class: Type
 
@@ -105,7 +105,7 @@ class BaseNSQServer(abc.ABC):
 
 
 class NSQD(BaseNSQServer):
-    """Simple async nsqd server. Requires installed nsqd binary."""
+    """nsqd server."""
 
     http_writer_class = NSQDHTTPWriter
 
@@ -146,6 +146,8 @@ class NSQD(BaseNSQServer):
 
 
 class NSQLookupD(BaseNSQServer):
+    """nsqlookupd server."""
+
     http_writer_class = NsqLookupd
 
     @property
