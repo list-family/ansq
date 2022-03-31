@@ -1,11 +1,9 @@
 import asyncio
 import json
-import logging
 import sys
 import warnings
-from asyncio.events import AbstractEventLoop
 from datetime import datetime, timezone
-from typing import Any, AsyncGenerator, Callable, Optional, Union
+from typing import Any, AsyncGenerator, Callable, Mapping, Optional, Union
 
 import attr
 
@@ -562,21 +560,8 @@ async def open_connection(
     host: str = "localhost",
     port: int = 4150,
     *,
-    connection_options: Optional[ConnectionOptions] = None,
-    message_queue: Optional[asyncio.Queue] = None,
-    on_message: Optional[Callable] = None,
-    on_exception: Optional[Callable] = None,
-    loop: Optional[AbstractEventLoop] = None,
-    auto_reconnect: bool = True,
-    heartbeat_interval: int = 30000,
-    feature_negotiation: bool = True,
-    tls_v1: bool = False,
-    snappy: bool = False,
-    deflate: bool = False,
-    deflate_level: int = 6,
-    sample_rate: int = 0,
-    debug: bool = False,
-    logger: Optional[logging.Logger] = None,
+    connection_options: ConnectionOptions = ConnectionOptions(),
+    **kwargs: Mapping[str, Any],
 ) -> NSQConnection:
     """A helper to create and open an `NSQConnection`.
 
@@ -585,25 +570,8 @@ async def open_connection(
     nsq = NSQConnection(
         host,
         port,
-        connection_options=connection_options
-        or ConnectionOptions(
-            message_queue=message_queue,
-            on_message=on_message,
-            on_exception=on_exception,
-            loop=loop,
-            auto_reconnect=auto_reconnect,
-            features=ConnectionFeatures(
-                deflate=deflate,
-                deflate_level=deflate_level,
-                feature_negotiation=feature_negotiation,
-                heartbeat_interval=heartbeat_interval,
-                sample_rate=sample_rate,
-                snappy=snappy,
-                tls_v1=tls_v1,
-            ),
-            debug=debug,
-            logger=logger,
-        ),
+        connection_options=connection_options,
+        **kwargs,
     )
     await nsq.connect()
     await nsq.identify()

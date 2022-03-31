@@ -1,13 +1,21 @@
 import abc
 import asyncio
-import itertools
 import logging
 import warnings
 from asyncio.events import AbstractEventLoop
 from asyncio.streams import StreamReader, StreamWriter
 from collections import deque
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Callable, Deque, Dict, Optional, Tuple, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Deque,
+    Mapping,
+    Optional,
+    Tuple,
+    Union,
+)
 
 import attr
 
@@ -42,6 +50,21 @@ class ConnectionOptions:
     debug: bool = False
     logger: Optional[logging.Logger] = None
 
+    def _update(self, **kwargs: Any) -> None:
+        options = set(attr.fields_dict(type(self)))
+        features = set(attr.fields_dict(type(self.features)))
+
+        for param, value in kwargs.items():
+            if param in options:
+                setattr(self, param, value)
+                break
+
+            if param in features:
+                setattr(self.features, param, value)
+                break
+
+            raise TypeError(f"got an unexpected keyword argument: '{param}'")
+
 
 class TCPConnection(abc.ABC):
     instances_count = 0
@@ -52,51 +75,13 @@ class TCPConnection(abc.ABC):
         port: int = 4150,
         *,
         connection_options: ConnectionOptions = ConnectionOptions(),
-        message_queue: Optional[asyncio.Queue] = None,
-        on_message: Optional[Callable] = None,
-        on_exception: Optional[Callable] = None,
-        on_close: Optional[Callable[["TCPConnection"], None]] = None,
-        loop: Optional[AbstractEventLoop] = None,
-        auto_reconnect: Optional[bool] = None,
-        deflate: Optional[bool] = None,
-        deflate_level: Optional[int] = None,
-        tls_v1: Optional[bool] = None,
-        snappy: Optional[bool] = None,
-        sample_rate: Optional[int] = None,
-        heartbeat_interval: Optional[int] = None,
-        feature_negotiation: Optional[bool] = None,
-        debug: Optional[bool] = None,
-        logger: Optional[logging.Logger] = None,
+        **kwargs: Mapping[str, Any],
     ):
         from ansq.tcp.protocol import Reader
         from ansq.tcp.types import ConnectionStatus
         from ansq.utils import get_logger
 
-        deprecated_kw_options: Dict[str, Any] = {
-            "message_queue": message_queue,
-            "on_message": on_message,
-            "on_exception": on_exception,
-            "on_close": on_close,
-            "loop": loop,
-            "auto_reconnect": auto_reconnect,
-            "debug": debug,
-            "logger": logger,
-        }
-        deprecated_kw_features: Dict[str, Any] = {
-            "deflate": deflate,
-            "deflate_level": deflate_level,
-            "feature_negotiation": feature_negotiation,
-            "heartbeat_interval": heartbeat_interval,
-            "sample_rate": sample_rate,
-            "snappy": snappy,
-            "tls_v1": tls_v1,
-        }
-        if any(
-            arg is not None
-            for arg in itertools.chain(
-                deprecated_kw_options.values(), deprecated_kw_features.values()
-            )
-        ):
+        if kwargs:
             warnings.warn(
                 message=(
                     "Passing connection options to `TCPConnection` using keyword "
@@ -104,23 +89,8 @@ class TCPConnection(abc.ABC):
                 ),
                 category=DeprecationWarning,
             )
-            connection_features = attr.evolve(
-                ConnectionFeatures(),
-                **{
-                    name: value
-                    for name, value in deprecated_kw_features.items()
-                    if value is not None
-                },
-            )
-            deprecated_kw_options["features"] = connection_features
-            connection_options = attr.evolve(
-                connection_options,
-                **{
-                    name: value
-                    for name, value in deprecated_kw_options.items()
-                    if value is not None
-                },
-            )
+            connection_options._update(**kwargs)
+
         self._options: ConnectionOptions = connection_options
 
         self.instance_number = self.__class__.instances_count
