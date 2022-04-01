@@ -32,7 +32,7 @@ Written with native Asyncio NSQ package
 
 ### Consumer
 
-A simple consumer reads a messages from "example_topic" and prints stdout.
+A simple consumer reads a messages from "example_topic" and prints them to the stdout.
 
 ```python
 import ansq
