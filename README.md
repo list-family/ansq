@@ -6,25 +6,85 @@
 
 Written with native Asyncio NSQ package
 
+## Overview
+- `Reader` high-level class for building consumers with nsqlookupd support
+- `Writer` high-level producer class supporting async publishing of messages to nsqd
+  over the TCP protocol
+- `NSQConnection` - low-level class representing a TCP connection to nsqd:
+    - full TCP wrapper
+    - one connection for sub and pub
+    - self-healing: when the connection is lost, reconnects, sends identify
+      and auth commands, subscribes to previous topic/channel
+
 ## Features
-* Full TCP wrapper
-* One connection for writer and reader
-* Self-healing: when the NSQ connection is lost, reconnects, sends identify
-    and auth commands, subscribes to previous topic/channel
-* Many helper-methods in each class
 
-Roadmap:
-* Docs
-* Lookupd tool
-* HTTP API wrapper
-* Deflate, Snappy compressions
-* TLSv1
+- [x] SUB
+- [x] PUB
+- [x] Discovery
+- [ ] Backoff
+- [ ] TLS
+- [ ] Deflate
+- [ ] Snappy
+- [x] Sampling
+- [x] AUTH
 
-## How to
+## Usages
 
-## Examples
+### Consumer
 
-### Write and read messages:
+A simple consumer reads a messages from "example_topic" and prints stdout.
+
+```python
+import ansq
+import asyncio
+
+
+async def main():
+    reader = await ansq.create_reader(
+        nsqd_tcp_addresses=["127.0.0.1:4150"],
+        topic="example_topic",
+        channel="example_channel",
+    )
+
+    async for message in reader.messages():
+        print(f"Message: {message.body}")
+        await message.fin()
+
+    await reader.close()
+
+
+if __name__ == '__main__':
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(main())
+```
+
+### Producer
+
+A simple producer sends a "Hello, world!" message to "example_topic".
+
+```python
+import ansq
+import asyncio
+
+
+async def main():
+    writer = await ansq.create_writer(nsqd_tcp_addresses=["127.0.0.1:4150"])
+    await writer.pub(
+        topic="example_topic",
+        message="Hello, world!",
+    )
+    await writer.close()
+
+
+if __name__ == '__main__':
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(main())
+```
+
+## More examples
+
+### One connection for subscribe and publish messages
+
 ```python
 import asyncio
 from ansq import open_connection
@@ -90,7 +150,8 @@ if __name__ == '__main__':
 
 ```
 
-### Consumer:
+### Low-level consumer
+
 ```python
 import asyncio
 from ansq import open_connection
