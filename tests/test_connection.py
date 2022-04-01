@@ -1,6 +1,6 @@
 import pytest
 
-from ansq import open_connection
+from ansq import ConnectionOptions, open_connection
 
 
 @pytest.mark.asyncio
@@ -41,7 +41,9 @@ async def test_reconnect_while_connected():
 
 @pytest.mark.asyncio
 async def test_auto_reconnect(nsqd, wait_for):
-    nsq = await open_connection(auto_reconnect=True)
+    nsq = await open_connection(
+        connection_options=ConnectionOptions(auto_reconnect=True)
+    )
     assert nsq.status.is_connected
 
     await nsqd.stop()

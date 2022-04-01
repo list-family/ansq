@@ -1,10 +1,11 @@
 import asyncio
 import json
-import logging
 import sys
-from asyncio.events import AbstractEventLoop
+import warnings
 from datetime import datetime, timezone
-from typing import Any, AsyncGenerator, Callable, Optional, Union
+from typing import Any, AsyncGenerator, Callable, Mapping, Optional, Union
+
+import attr
 
 from ansq.tcp import consts
 from ansq.tcp.exceptions import (
@@ -14,6 +15,8 @@ from ansq.tcp.exceptions import (
     get_exception,
 )
 from ansq.tcp.types import (
+    ConnectionFeatures,
+    ConnectionOptions,
     ConnectionStatus,
     NSQCommands,
     NSQErrorSchema,
@@ -261,17 +264,55 @@ class NSQConnection(NSQConnectionBase):
         return await future
 
     async def identify(
-        self, config: Optional[Union[dict, str]] = None, **kwargs: Any
+        self,
+        config: Optional[Union[dict, str]] = None,
+        *,
+        features: Optional[ConnectionFeatures] = None,
+        **kwargs: Any,
     ) -> TCPResponse:
-        if config and isinstance(config, (dict, str)):
-            raise TypeError("Config should be dict type or str")
+        """Executes `IDENTIFY` command.
 
-        if config or kwargs:
-            self._config = config or kwargs
-        config = json.dumps(self._config)
+        Connection features are being determined in the following order: `features`,
+        `config` (deprecated), `kwargs` (deprecated).
+
+        If any of `features`, `config`, `kwargs` exist features defined in `__init__`
+        method will be ignored.
+        """
+        # handle deprecated args
+        if config is not None:
+            if not isinstance(config, (dict, str)):
+                raise TypeError("Config should be dict type or str")
+            warnings.warn(
+                message=(
+                    "`config` argument for `NSQConnection.identify` is deprecated: "
+                    "use `features` argument instead"
+                ),
+                category=DeprecationWarning,
+            )
+            if isinstance(config, dict):
+                features = ConnectionFeatures(**config)
+        elif kwargs:
+            warnings.warn(
+                message=(
+                    "Passing keyword arguments to `NSQConnection.identify` is "
+                    "deprecated: use `features` argument instead"
+                ),
+                category=DeprecationWarning,
+            )
+            features = ConnectionFeatures(**kwargs)
+
+        # update options with features passed as arguments to this method
+        if features is not None:
+            self._options = attr.evolve(self._options, features=features)
+
+        # maybe handle `config` argument passed as a string
+        if features is None and isinstance(config, str):
+            features_data = config
+        else:
+            features_data = json.dumps(attr.asdict(self._options.features))
 
         response = await self.execute(
-            NSQCommands.IDENTIFY, data=config, callback=self._start_upgrading
+            NSQCommands.IDENTIFY, data=features_data, callback=self._start_upgrading
         )
 
         if response in (NSQCommands.OK, NSQCommands.OK.decode()):
@@ -523,38 +564,18 @@ async def open_connection(
     host: str = "localhost",
     port: int = 4150,
     *,
-    message_queue: asyncio.Queue = None,
-    on_message: Callable = None,
-    on_exception: Callable = None,
-    loop: AbstractEventLoop = None,
-    auto_reconnect: bool = True,
-    heartbeat_interval: int = 30000,
-    feature_negotiation: bool = True,
-    tls_v1: bool = False,
-    snappy: bool = False,
-    deflate: bool = False,
-    deflate_level: int = 6,
-    sample_rate: int = 0,
-    debug: bool = False,
-    logger: logging.Logger = None,
+    connection_options: ConnectionOptions = ConnectionOptions(),
+    **kwargs: Mapping[str, Any],
 ) -> NSQConnection:
+    """A helper to create and open an `NSQConnection`.
+
+    If `connection_options` is defined other keyword args are being ignored.
+    """
     nsq = NSQConnection(
         host,
         port,
-        message_queue=message_queue,
-        on_message=on_message,
-        on_exception=on_exception,
-        loop=loop,
-        auto_reconnect=auto_reconnect,
-        heartbeat_interval=heartbeat_interval,
-        feature_negotiation=feature_negotiation,
-        tls_v1=tls_v1,
-        snappy=snappy,
-        deflate=deflate,
-        deflate_level=deflate_level,
-        sample_rate=sample_rate,
-        debug=debug,
-        logger=logger,
+        connection_options=connection_options,
+        **kwargs,
     )
     await nsq.connect()
     await nsq.identify()
