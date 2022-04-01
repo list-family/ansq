@@ -83,7 +83,7 @@ if __name__ == '__main__':
 
 ## More examples
 
-### One connection for subscribe and publish messages
+### One connection for subscribing and publishing messages
 
 ```python
 import asyncio
