@@ -13,9 +13,7 @@ async def nsqd2(tmp_path, create_nsqd):
 
 
 async def test_create_reader(nsqd):
-    reader = await create_reader(
-        topic="foo", channel="bar", nsqd_tcp_addresses=[nsqd.tcp_address]
-    )
+    reader = await create_reader(topic="foo", channel="bar")
 
     assert reader.topic == "foo"
     assert reader.channel == "bar"
@@ -25,7 +23,7 @@ async def test_create_reader(nsqd):
 
 
 async def test_connect_reader(nsqd):
-    reader = Reader(topic="foo", channel="bar", nsqd_tcp_addresses=[nsqd.tcp_address])
+    reader = Reader(topic="foo", channel="bar")
     assert not reader.connections
 
     await reader.connect()
@@ -36,9 +34,7 @@ async def test_connect_reader(nsqd):
 
 
 async def test_close_reader(nsqd):
-    reader = await create_reader(
-        topic="foo", channel="bar", nsqd_tcp_addresses=[nsqd.tcp_address]
-    )
+    reader = await create_reader(topic="foo", channel="bar")
     await reader.close()
 
     closed_connections = [conn for conn in reader.connections if conn.is_closed]
@@ -50,9 +46,7 @@ async def test_wait_for_message(nsqd):
     await nsq.pub(topic="foo", message="test_message")
     await nsq.close()
 
-    reader = await create_reader(
-        topic="foo", channel="bar", nsqd_tcp_addresses=[nsqd.tcp_address]
-    )
+    reader = await create_reader(topic="foo", channel="bar")
 
     message = await reader.wait_for_message()
     await message.fin()
@@ -67,9 +61,7 @@ async def test_messages_generator(nsqd):
     await nsq.pub(topic="foo", message="test_message2")
     await nsq.close()
 
-    reader = await create_reader(
-        topic="foo", channel="bar", nsqd_tcp_addresses=[nsqd.tcp_address]
-    )
+    reader = await create_reader(topic="foo", channel="bar")
 
     read_messages = []
     async for message in reader.messages():

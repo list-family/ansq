@@ -39,15 +39,16 @@ class Reader(Client):
         connection_options: ConnectionOptions = ConnectionOptions(),
         loop: AbstractEventLoop = None,
     ):
-        if not any((nsqd_tcp_addresses, lookupd_http_addresses)):
-            raise ValueError(
-                "nsqd_tcp_addresses or/and lookupd_http_addresses must be not empty",
-            )
+        if nsqd_tcp_addresses is None:
+            nsqd_tcp_addresses = []
 
         super().__init__(
             nsqd_tcp_addresses=nsqd_tcp_addresses or [],
             connection_options=connection_options,
         )
+
+        if not any((self._nsqd_tcp_addresses, lookupd_http_addresses)):
+            self._nsqd_tcp_addresses = ["localhost:4150"]
 
         self._topic = topic
         self._channel = channel
@@ -319,8 +320,8 @@ class Address(NamedTuple):
 async def create_reader(
     topic: str,
     channel: str,
-    nsqd_tcp_addresses: Sequence[str] = None,
-    lookupd_http_addresses: Sequence[str] = None,
+    nsqd_tcp_addresses: Optional[Sequence[str]] = None,
+    lookupd_http_addresses: Optional[Sequence[str]] = None,
     lookupd_poll_interval: float = 60000,
     lookupd_poll_jitter: float = 0.3,
     connection_options: ConnectionOptions = ConnectionOptions(),

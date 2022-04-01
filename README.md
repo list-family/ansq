@@ -41,7 +41,6 @@ import asyncio
 
 async def main():
     reader = await ansq.create_reader(
-        nsqd_tcp_addresses=["127.0.0.1:4150"],
         topic="example_topic",
         channel="example_channel",
     )
@@ -68,7 +67,7 @@ import asyncio
 
 
 async def main():
-    writer = await ansq.create_writer(nsqd_tcp_addresses=["127.0.0.1:4150"])
+    writer = await ansq.create_writer()
     await writer.pub(
         topic="example_topic",
         message="Hello, world!",
