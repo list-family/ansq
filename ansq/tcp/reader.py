@@ -183,7 +183,7 @@ class Lookupd:
         self._poll_lookup_task: Optional[asyncio.Task] = None
 
         # Keep original on close callback to call it in `self._on_close_connection`
-        self._reader_on_close = self._reader.connection_options.on_close
+        self._orig_on_close_callback = self._reader.connection_options.on_close
 
         # Configure connections specific for lookupd
         self._reader.connection_options = attr.evolve(
@@ -304,8 +304,8 @@ class Lookupd:
         self._reader.remove_connection(connection)
 
         # Call an original on_close callback if specified
-        if self._reader_on_close is not None:
-            self._reader_on_close(connection)
+        if self._orig_on_close_callback is not None:
+            self._orig_on_close_callback(connection)
 
 
 class Address(NamedTuple):
