@@ -7,12 +7,12 @@
 Written with native Asyncio NSQ package
 
 ## Overview
-- `Reader` high-level class for building consumers with nsqlookupd support
-- `Writer` high-level producer class supporting async publishing of messages to nsqd
+- `Reader` — high-level class for building consumers with `nsqlookupd` support
+- `Writer` — high-level producer class supporting async publishing of messages to `nsqd`
   over the TCP protocol
-- `NSQConnection` - low-level class representing a TCP connection to nsqd:
+- `NSQConnection` — low-level class representing a TCP connection to `nsqd`:
     - full TCP wrapper
-    - one connection for sub and pub
+    - one connection for `sub` and `pub`
     - self-healing: when the connection is lost, reconnects, sends identify
       and auth commands, subscribes to previous topic/channel
 
