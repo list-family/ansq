@@ -3,6 +3,8 @@ import sys
 from setuptools import find_packages, setup
 
 PY_VER = sys.version_info
+
+# NOTE: keep this in sync with `additional_dependencies` in `.pre-commit-config.yaml`
 install_requires = [
     "aiohttp>=1.0.0",
     "attrs>=20.1",
