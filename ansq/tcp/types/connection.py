@@ -24,7 +24,7 @@ class TCPConnection(abc.ABC):
         message_queue: asyncio.Queue = None,
         on_message: Callable = None,
         on_exception: Callable = None,
-        on_close: Callable = None,
+        on_close: Callable[["TCPConnection"], None] = None,
         loop: AbstractEventLoop = None,
         auto_reconnect: bool = True,
         heartbeat_interval: int = 30000,

@@ -154,6 +154,8 @@ class NSQConnection(NSQConnectionBase):
                 await self._reader_task
             except asyncio.CancelledError:
                 # The task is cancelled - don't log useless exception trace
+                # TODO: In the future look further for reasons a task could
+                #       appear cancelled here
                 pass
             except Exception as e:
                 self.logger.exception(e)

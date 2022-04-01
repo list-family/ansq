@@ -89,11 +89,18 @@ class Reader(Client):
 
             # One of connection is closed
             if message is None:
-                # Don't close generator if auto-reconnect enabled or lookupd configured
-                if self._lookupd is not None or self._is_auto_reconnect_enabled:
+                # Keep the generator alive if lookupd is enabled as the reader
+                # would restore or discover new connections
+                if self._lookupd is not None:
                     continue
-                else:
-                    break
+
+                # Keep the generator alive if auto-reconnect is enabled, as the
+                # connection would be restored later by itself
+                if self._is_auto_reconnect_enabled:
+                    continue
+
+                # Otherwise close the generator
+                break
 
             yield message
 
@@ -263,10 +270,10 @@ class Lookupd:
             raise ValueError(f"lookup response must be a dict: {lookup_response}")
 
         # Get producers from the result response
-        producers_addresses = self._get_producer_addresses(lookup_response)
+        producer_addresses = self._get_producer_addresses(lookup_response)
 
         # Connect to all producers addresses
-        for address in producers_addresses:
+        for address in producer_addresses:
             await self._reader.connect_to_nsqd(address.host, address.port)
 
     @staticmethod
