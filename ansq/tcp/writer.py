@@ -1,5 +1,5 @@
 import random
-from typing import TYPE_CHECKING, Any, Sequence
+from typing import TYPE_CHECKING, Any, Optional, Sequence
 
 from ansq.tcp.connection import NSQConnection
 from ansq.tcp.types import Client, ConnectionOptions
@@ -13,16 +13,16 @@ class Writer(Client):
 
     def __init__(
         self,
-        nsqd_tcp_addresses: Sequence[str],
+        nsqd_tcp_addresses: Optional[Sequence[str]] = None,
         connection_options: ConnectionOptions = ConnectionOptions(),
     ):
         super().__init__(
-            nsqd_tcp_addresses=nsqd_tcp_addresses,
+            nsqd_tcp_addresses=nsqd_tcp_addresses or [],
             connection_options=connection_options,
         )
 
         if not self._nsqd_tcp_addresses:
-            raise ValueError("nsqd_tcp_addresses must be not empty")
+            self._nsqd_tcp_addresses = ["localhost:4150"]
 
     async def pub(self, topic: str, message: Any) -> "TCPResponse":
         """Publish a message to a topic to a random connection."""
@@ -48,7 +48,7 @@ class Writer(Client):
 
 
 async def create_writer(
-    nsqd_tcp_addresses: Sequence[str],
+    nsqd_tcp_addresses: Optional[Sequence[str]] = None,
     connection_options: ConnectionOptions = ConnectionOptions(),
 ) -> Writer:
     """Return created and connected writer."""

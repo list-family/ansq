@@ -13,7 +13,7 @@ async def nsqd2(tmp_path, create_nsqd):
 
 
 async def test_create_writer(nsqd):
-    writer = await create_writer(nsqd_tcp_addresses=[nsqd.tcp_address])
+    writer = await create_writer()
 
     open_connections = [conn for conn in writer.connections if conn.is_connected]
     assert len(open_connections) == 1
@@ -22,7 +22,7 @@ async def test_create_writer(nsqd):
 
 
 async def test_connect_writer(nsqd):
-    writer = Writer(nsqd_tcp_addresses=[nsqd.tcp_address])
+    writer = Writer()
     assert not writer.connections
 
     await writer.connect()
@@ -33,7 +33,7 @@ async def test_connect_writer(nsqd):
 
 
 async def test_close_writer(nsqd):
-    writer = await create_writer(nsqd_tcp_addresses=[nsqd.tcp_address])
+    writer = await create_writer()
     await writer.close()
 
     closed_connections = [conn for conn in writer.connections if conn.is_closed]
@@ -41,7 +41,7 @@ async def test_close_writer(nsqd):
 
 
 async def test_pub(nsqd):
-    writer = await create_writer(nsqd_tcp_addresses=[nsqd.tcp_address])
+    writer = await create_writer()
 
     response = await writer.pub(topic="foo", message="test_message")
     assert response.is_ok
@@ -50,7 +50,7 @@ async def test_pub(nsqd):
 
 
 async def test_mpub(nsqd):
-    writer = await create_writer(nsqd_tcp_addresses=[nsqd.tcp_address])
+    writer = await create_writer()
 
     messages = [f"test_message_{i}" for i in range(10)]
     response = await writer.mpub("foo", *messages)
@@ -60,7 +60,7 @@ async def test_mpub(nsqd):
 
 
 async def test_dpub(nsqd):
-    writer = await create_writer(nsqd_tcp_addresses=[nsqd.tcp_address])
+    writer = await create_writer()
 
     response = await writer.dpub(topic="foo", message="test_message", delay_time=1)
     assert response.is_ok
