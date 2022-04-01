@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING, Dict, Sequence, Tuple
 
 import attr
 
-from ansq.tcp.types import ConnectionOptions
+from .connection import ConnectionOptions
 
 if TYPE_CHECKING:
     from ansq.tcp.connection import NSQConnection
