@@ -1,7 +1,7 @@
 bump_version:
 	@printf 'Enter new version: '; \
 	read new_version; \
-	sed -i"" -r "s/version=\"[^\"]*\"/version=\"$${new_version}\"/" setup.py
+	sed -i"" -r "s/version = .*/version = $${new_version}/" setup.cfg
 
 dist:
 	rm -rf ansq.egg-info/ build/ dist/
