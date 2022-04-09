@@ -26,7 +26,7 @@ Written with native Asyncio NSQ package
 - [ ] Deflate
 - [ ] Snappy
 - [x] Sampling
-- [x] AUTH
+- [ ] AUTH
 
 ## Usages
 
