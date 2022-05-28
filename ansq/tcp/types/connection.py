@@ -263,7 +263,7 @@ class TCPConnection(abc.ABC):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def _on_message_hook(self, response: "NSQMessageSchema") -> None:
+    async def _on_message_hook(self, response: "NSQMessageSchema") -> None:
         raise NotImplementedError()
 
     @abc.abstractmethod

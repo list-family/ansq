@@ -394,7 +394,7 @@ class NSQConnection(NSQConnectionBase):
             assert isinstance(response, NSQMessageSchema)
             # track number in flight messages
             self._in_flight += 1
-            self._on_message_hook(response)
+            await self._on_message_hook(response)
             return True
 
         future: asyncio.Future
@@ -417,7 +417,7 @@ class NSQConnection(NSQConnectionBase):
 
         return True
 
-    def _on_message_hook(self, message_schema: NSQMessageSchema) -> None:
+    async def _on_message_hook(self, message_schema: NSQMessageSchema) -> None:
         self._last_message_time = datetime.now(tz=timezone.utc)
         message = NSQMessage(message_schema, self)
 
@@ -425,7 +425,7 @@ class NSQConnection(NSQConnectionBase):
             try:
                 message = self._on_message(message)
             except Exception as e:
-                self._do_close(e)
+                await self._do_close(e)
         self._message_queue.put_nowait(message)
 
     async def _read_buffer(self) -> None:
