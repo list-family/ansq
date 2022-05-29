@@ -6,9 +6,6 @@ on:
     branches:
       - master
     tags:
-  schedule:
-    # Run everyday at 02:34 UTC
-    - cron: 34 2 * * *
 
 jobs:
   test:
