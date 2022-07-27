@@ -364,7 +364,9 @@ class NSQConnection(NSQConnectionBase):
                 return
 
             self._parser.feed(data)
-            not self._is_upgrading and await self._read_buffer()
+
+            if not self._is_upgrading:
+                await self._read_buffer()
 
         self.logger.info("Lost connection to NSQ %s", self.endpoint)
         if self._auto_reconnect:
