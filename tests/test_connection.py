@@ -1,6 +1,6 @@
 import pytest
 
-from ansq import ConnectionOptions, open_connection
+from ansq import ConnectionFeatures, ConnectionOptions, open_connection
 
 
 @pytest.mark.asyncio
@@ -53,4 +53,15 @@ async def test_auto_reconnect(nsqd, wait_for):
     await wait_for(lambda: nsq.status.is_connected)
 
     await nsq.close()
+    assert nsq.status.is_closed
+
+
+@pytest.mark.asyncio
+async def test_invalid_feature(create_nsqd, wait_for, nsqd):
+    nsq = await open_connection(
+        connection_options=ConnectionOptions(
+            # Default max heartbeat is 60s
+            features=ConnectionFeatures(heartbeat_interval=60001)
+        )
+    )
     assert nsq.status.is_closed

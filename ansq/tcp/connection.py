@@ -125,7 +125,7 @@ class NSQConnection(NSQConnectionBase):
 
     async def _do_close(
         self,
-        exception: Optional[Exception] = None,
+        error: Optional[Union[Exception, str]] = None,
         change_status: bool = True,
         silent: bool = False,
     ) -> None:
@@ -136,10 +136,10 @@ class NSQConnection(NSQConnectionBase):
             self._status = ConnectionStatus.CLOSING
 
         if not silent:
-            if exception:
+            if error is not None:
                 self.logger.error(
                     "Connection {} is closing due an error: {}".format(
-                        self.endpoint, exception
+                        self.endpoint, error
                     ),
                 )
             else:
@@ -320,7 +320,19 @@ class NSQConnection(NSQConnectionBase):
             return response
 
         assert isinstance(response, NSQResponseSchema)
-        response_config = json.loads(response.body)
+
+        # failed to update client metadata on the server and negotiate features
+        if response.is_error:
+            await self._do_close(error=response.text)
+            return response
+
+        try:
+            response_config = json.loads(response.body)
+        except ValueError as exc:
+            self.logger.error("failed to parse IDENTIFY response - %r", response.body)
+            await self._do_close(error=exc)
+            return response
+
         fut = None
 
         if response_config.get("auth_required"):

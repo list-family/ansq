@@ -43,6 +43,10 @@ class NSQResponseSchema:
     def is_error(self) -> bool:
         return self.frame_type.is_error
 
+    @property
+    def text(self) -> str:
+        return self.body.decode("utf-8")
+
 
 class NSQMessageSchema(NSQResponseSchema):
     """NSQ Message schema"""
