@@ -8,7 +8,7 @@ from ansq.tcp.types import NSQMessage
 
 
 @pytest.mark.asyncio
-async def test_read_message():
+async def test_read_message(nsqd):
     nsq = await open_connection()
     assert nsq.status.is_connected
 
@@ -32,7 +32,7 @@ async def test_read_message():
 
 
 @pytest.mark.asyncio
-async def test_read_message_and_req():
+async def test_read_message_and_req(nsqd):
     nsq = await open_connection()
     assert nsq.status.is_connected
 
@@ -56,7 +56,7 @@ async def test_read_message_and_req():
 
 
 @pytest.mark.asyncio
-async def test_read_message_and_touch():
+async def test_read_message_and_touch(nsqd):
     nsq = await open_connection()
     assert nsq.status.is_connected
 
@@ -85,7 +85,7 @@ async def test_read_message_and_touch():
 
 
 @pytest.mark.asyncio
-async def test_read_message_and_fin_twice():
+async def test_read_message_and_fin_twice(nsqd):
     nsq = await open_connection()
     assert nsq.status.is_connected
 
@@ -113,7 +113,7 @@ async def test_read_message_and_fin_twice():
 
 
 @pytest.mark.asyncio
-async def test_read_messages_via_generator():
+async def test_read_messages_via_generator(nsqd):
     nsq = await open_connection()
     assert nsq.status.is_connected
 
@@ -140,7 +140,7 @@ async def test_read_messages_via_generator():
 
 
 @pytest.mark.asyncio
-async def test_read_single_message_via_get_message():
+async def test_read_single_message_via_get_message(nsqd):
     nsq = await open_connection()
     assert nsq.status.is_connected
 
@@ -168,7 +168,7 @@ async def test_read_single_message_via_get_message():
 
 
 @pytest.mark.asyncio
-async def test_read_bytes_message():
+async def test_read_bytes_message(nsqd):
     nsq = await open_connection()
     assert nsq.status.is_connected
 

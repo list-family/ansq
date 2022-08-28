@@ -199,7 +199,7 @@ def create_nsqlookupd():
     return _create_nsqlookupd
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture
 async def nsqd(create_nsqd) -> NSQD:
     async with create_nsqd() as nsqd:
         yield nsqd
