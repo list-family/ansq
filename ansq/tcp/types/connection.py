@@ -6,7 +6,17 @@ from asyncio.events import AbstractEventLoop
 from asyncio.streams import StreamReader, StreamWriter
 from collections import deque
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Callable, Deque, Mapping, Optional, Tuple, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Deque,
+    Dict,
+    Mapping,
+    Optional,
+    Tuple,
+    Union,
+)
 
 import attr
 
@@ -41,20 +51,27 @@ class ConnectionOptions:
     debug: bool = False
     logger: Optional[logging.Logger] = None
 
-    def _update(self, **kwargs: Any) -> None:
-        options = set(attr.fields_dict(type(self)))
-        features = set(attr.fields_dict(type(self.features)))
+    def _evolve(self, **kwargs: Any) -> "ConnectionOptions":
+        option_names = set(attr.fields_dict(type(self)))
+        option_names.discard("features")
+        feature_names = set(attr.fields_dict(type(self.features)))
+
+        options: Dict[str, Any] = {}
+        features: Dict[str, Any] = {}
 
         for param, value in kwargs.items():
-            if param in options:
-                setattr(self, param, value)
+            if param in option_names:
+                options[param] = value
                 break
 
-            if param in features:
-                setattr(self.features, param, value)
+            if param in feature_names:
+                features[param] = value
                 break
 
             raise TypeError(f"got an unexpected keyword argument: '{param}'")
+
+        connection_features = attr.evolve(self.features, **features)
+        return attr.evolve(self, features=connection_features, **options)
 
 
 class TCPConnection(abc.ABC):
@@ -81,7 +98,7 @@ class TCPConnection(abc.ABC):
                 ),
                 category=DeprecationWarning,
             )
-            connection_options._update(**kwargs)
+            connection_options = connection_options._evolve(**kwargs)
 
         self._options: ConnectionOptions = connection_options
 
