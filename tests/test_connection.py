@@ -65,3 +65,24 @@ async def test_invalid_feature(create_nsqd, wait_for, nsqd):
         )
     )
     assert nsq.status.is_closed
+
+
+async def test_connection_options_as_kwargs(nsqd):
+    nsq = await open_connection(debug=True)
+    assert nsq._options.debug is True
+    await nsq.close()
+
+
+@pytest.mark.asyncio
+async def test_feature_options_as_kwargs(nsqd):
+    nsq = await open_connection(heartbeat_interval=30001)
+    assert nsq._options.features.heartbeat_interval == 30001
+    await nsq.close()
+
+
+@pytest.mark.asyncio
+async def test_invalid_kwarg(nsqd):
+    with pytest.raises(
+        TypeError, match="got an unexpected keyword argument: 'invalid_kwarg'"
+    ):
+        await open_connection(invalid_kwarg=1)
