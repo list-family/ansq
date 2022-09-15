@@ -4,7 +4,7 @@ from ansq import ConnectionOptions, open_connection
 
 
 @pytest.mark.asyncio
-async def test_connection():
+async def test_connection(nsqd):
     nsq = await open_connection()
     assert nsq.status.is_connected
 
@@ -13,7 +13,7 @@ async def test_connection():
 
 
 @pytest.mark.asyncio
-async def test_reconnect_after_close():
+async def test_reconnect_after_close(nsqd):
     nsq = await open_connection()
     assert nsq.status.is_connected
 
@@ -28,7 +28,7 @@ async def test_reconnect_after_close():
 
 
 @pytest.mark.asyncio
-async def test_reconnect_while_connected():
+async def test_reconnect_while_connected(nsqd):
     nsq = await open_connection()
     assert nsq.status.is_connected
 
