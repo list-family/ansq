@@ -419,7 +419,7 @@ class NSQConnection(NSQConnectionBase):
 
         # non-error responses must have a command waiter, otherwise,
         # it's more likely a bug
-        if not self._cmd_waiters:
+        if not self._cmd_waiters:  # pragma: no cover
             self.logger.error("Unexpected response: %s", truncate_text(response.text))
             return False
 
