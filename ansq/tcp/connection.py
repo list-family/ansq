@@ -411,8 +411,18 @@ class NSQConnection(NSQConnectionBase):
             await self._on_message_hook(response)
             return True
 
-        future: asyncio.Future
-        callback: Optional[Callable[[TCPResponse], Any]]
+        # commands like RDY/FIN/REQ/TOUCH do not return a success response, however,
+        # they might return an error
+        if response.is_error and not self._cmd_waiters:
+            self.logger.error(response.text)
+            return False
+
+        # non-error responses must have a command waiter, otherwise,
+        # it's more likely a bug
+        if not self._cmd_waiters:
+            self.logger.error("Unexpected response: %s", truncate_text(response.text))
+            return False
+
         future, callback = self._cmd_waiters.popleft()
 
         if response.is_response:
