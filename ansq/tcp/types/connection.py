@@ -35,6 +35,7 @@ class ConnectionFeatures:
     sample_rate: int = 0
     snappy: bool = False
     tls_v1: bool = False
+    msg_timeout: int = attr.ib(default=60000)
 
 
 @attr.define(frozen=True, auto_attribs=True, kw_only=True)
@@ -208,6 +209,10 @@ class TCPConnection(abc.ABC):
     def is_closed(self) -> bool:
         """True if connection is closed or closing."""
         return self.status.is_closed or self._status.is_closing
+
+    @property
+    def options(self) -> ConnectionOptions:
+        return self._options
 
     @abc.abstractmethod
     async def connect(self) -> bool:

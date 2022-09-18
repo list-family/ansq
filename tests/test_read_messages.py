@@ -3,7 +3,7 @@ from time import time
 
 import pytest
 
-from ansq import open_connection
+from ansq import ConnectionFeatures, ConnectionOptions, open_connection
 from ansq.tcp.types import NSQMessage
 
 
@@ -166,7 +166,11 @@ async def test_read_bytes_message(nsqd):
 
 @pytest.mark.asyncio
 async def test_timeout_messages(nsqd):
-    nsq = await open_connection()
+    nsq = await open_connection(
+        connection_options=ConnectionOptions(
+            features=ConnectionFeatures(msg_timeout=1000)
+        )
+    )
     assert nsq.status.is_connected
 
     first_message = "first test message at " + str(time())
@@ -187,8 +191,7 @@ async def test_timeout_messages(nsqd):
     assert nsq.is_subscribed
 
     # We need to wait while the message will be timed out.
-    # The default message timeout is 60 secs
-    await asyncio.sleep(61)
+    await asyncio.sleep(1.1)
 
     async for message in nsq.messages():
         assert message.can_be_processed
@@ -209,7 +212,11 @@ async def test_timeout_messages(nsqd):
 
 @pytest.mark.asyncio
 async def test_read_message_and_touch(nsqd):
-    nsq = await open_connection()
+    nsq = await open_connection(
+        connection_options=ConnectionOptions(
+            features=ConnectionFeatures(msg_timeout=1000)
+        )
+    )
     assert nsq.status.is_connected
 
     timestamp = time()
@@ -227,12 +234,12 @@ async def test_read_message_and_touch(nsqd):
 
     message = await nsq.message_queue.get()
     assert message.can_be_processed
-    await asyncio.sleep(31)
+    await asyncio.sleep(0.51)
 
     assert message.can_be_processed
     await message.touch()
     assert message.can_be_processed
-    await asyncio.sleep(31)
+    await asyncio.sleep(0.51)
 
     assert message.can_be_processed
     await message.fin()

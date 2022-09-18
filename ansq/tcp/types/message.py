@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from functools import wraps
-from typing import TYPE_CHECKING, Any, Callable, Union
+from typing import TYPE_CHECKING, Any, Callable
 
 from ansq.tcp.consts import DEFAULT_REQ_TIMEOUT
 
@@ -35,19 +35,17 @@ class NSQMessage:
         self,
         message_schema: "NSQMessageSchema",
         connection: "NSQConnection",
-        timeout_in: Union[timedelta, float, int] = timedelta(minutes=1),
-        is_processed: bool = False,
     ) -> None:
         self.timestamp = message_schema.timestamp
         self.attempts = message_schema.attempts
         self.body = message_schema.body
         self.id = message_schema.id
-        self._connection = connection
-        self._is_processed = is_processed
 
-        if isinstance(timeout_in, (float, int)):
-            timeout_in = timedelta(seconds=timeout_in)
-        self._timeout_in = timeout_in
+        self._connection = connection
+        self._timeout_in = timedelta(
+            milliseconds=connection.options.features.msg_timeout
+        )
+        self._is_processed = False
         self._initialized_at = datetime.now(tz=timezone.utc)
 
     def __repr__(self) -> str:
