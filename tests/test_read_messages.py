@@ -57,29 +57,67 @@ async def test_read_message_and_req(nsqd):
 
 
 @pytest.mark.asyncio
-async def test_read_message_and_fin_twice(nsqd):
+@pytest.mark.parametrize(
+    "process",
+    (
+        pytest.param(lambda message: message.fin(), id="fin"),
+        pytest.param(lambda message: message.req(), id="req"),
+    ),
+)
+async def test_read_and_process_twice_message(nsqd, process):
     nsq = await open_connection()
     assert nsq.status.is_connected
 
-    timestamp = time()
-
-    response = await nsq.pub(
-        "test_read_message_and_fin_twice", f"hello sent at {timestamp}"
-    )
+    response = await nsq.pub("topic", "foo")
     assert response.is_ok
 
-    response = await nsq.sub("test_read_message_and_fin_twice", "channel1")
-    assert response.is_ok
+    await nsq.subscribe("topic", "channel")
 
-    await nsq.rdy(1)
-    message = await nsq.message_queue.get()
+    message = await nsq.wait_for_message()
     assert message.can_be_processed
-    await message.fin()
+
+    # First process
+    await process(message)
 
     with pytest.raises(
         RuntimeWarning, match=r"Message id=[^ ]+ has already been processed"
     ):
-        await message.fin()
+        await process(message)
+
+    await nsq.close()
+    assert nsq.is_closed
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "process",
+    (
+        pytest.param(lambda message: message.fin(), id="fin"),
+        pytest.param(lambda message: message.req(), id="req"),
+        pytest.param(lambda message: message.touch(), id="touch"),
+    ),
+)
+async def test_read_and_process_timed_out_message(nsqd, process):
+    nsq = await open_connection(
+        connection_options=ConnectionOptions(
+            features=ConnectionFeatures(msg_timeout=1000)
+        )
+    )
+    assert nsq.status.is_connected
+
+    response = await nsq.pub("topic", "foo")
+    assert response.is_ok
+
+    await nsq.subscribe("topic", "channel")
+
+    message = await nsq.wait_for_message()
+    assert message.can_be_processed
+
+    # Wait until message is timed out
+    await asyncio.sleep(1.1)
+
+    with pytest.raises(RuntimeWarning, match=r"Message id=[^ ]+ is timed out"):
+        await process(message)
 
     await nsq.close()
     assert nsq.is_closed

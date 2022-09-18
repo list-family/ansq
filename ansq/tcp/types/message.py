@@ -98,7 +98,7 @@ class NSQMessage:
     async def fin(self) -> None:
         """Finish a message (indicate successful processing)
 
-        :raises RuntimeWarning: in case message was processed earlier.
+        :raises RuntimeWarning: in case message was processed earlier or timed out.
         """
         await self._connection.fin(self.id)
         self._is_processed = True
@@ -110,7 +110,7 @@ class NSQMessage:
         :param timeout: An ``int`` in milliseconds where
             N <= configured max timeout; 0 is a special case
             that will not defer re-queueing.
-        :raises RuntimeWarning: in case message was processed earlier.
+        :raises RuntimeWarning: in case message was processed earlier or timed out.
         """
         await self._connection.req(self.id, timeout)
         self._is_processed = True
@@ -119,7 +119,7 @@ class NSQMessage:
     async def touch(self) -> None:
         """Reset the timeout for an in-flight message.
 
-        :raises RuntimeWarning: in case message was processed earlier.
+        :raises RuntimeWarning: in case message was processed earlier or timed out.
         """
         await self._connection.touch(self.id)
         self._initialized_at = datetime.now(tz=timezone.utc)
