@@ -9,25 +9,24 @@ if TYPE_CHECKING:
 
     from . import NSQMessageSchema
 
-__all__ = "NSQMessage"
+__all__ = ["NSQMessage"]
 
 
-def not_processed(func: Callable) -> Callable:
-    """Decorator to verify that the message has not yet been processed.
+def ensure_can_be_processed(func: Callable) -> Callable:
+    """Decorator to verify that the message can be processed.
 
     :raises RuntimeWarning: in case message was processed earlier.
     """
 
     @wraps(func)
-    async def decorator(cls: "NSQMessage", *args: Any, **kwargs: Any) -> Any:
-        if cls.is_processed:
-            raise RuntimeWarning("Message has already been processed")
-        if cls.is_timed_out:
-            raise RuntimeWarning("Message is timed out")
-        response = await func(cls, *args, **kwargs)
-        return response
+    async def wrapper(message: "NSQMessage", *args: Any, **kwargs: Any) -> Any:
+        if message.is_processed:
+            raise RuntimeWarning(f"Message id={message.id} has already been processed")
+        if message.is_timed_out:
+            raise RuntimeWarning(f"Message id={message.id} is timed out")
+        return await func(message, *args, **kwargs)
 
-    return decorator
+    return wrapper
 
 
 class NSQMessage:
@@ -95,7 +94,7 @@ class NSQMessage:
         """True if the message has not been processed and has not timed out yet"""
         return not self.is_timed_out and not self.is_processed
 
-    @not_processed
+    @ensure_can_be_processed
     async def fin(self) -> None:
         """Finish a message (indicate successful processing)
 
@@ -104,7 +103,7 @@ class NSQMessage:
         await self._connection.fin(self.id)
         self._is_processed = True
 
-    @not_processed
+    @ensure_can_be_processed
     async def req(self, timeout: int = DEFAULT_REQ_TIMEOUT) -> None:
         """Re-queue a message (indicate failure to process)
 
@@ -116,7 +115,7 @@ class NSQMessage:
         await self._connection.req(self.id, timeout)
         self._is_processed = True
 
-    @not_processed
+    @ensure_can_be_processed
     async def touch(self) -> None:
         """Reset the timeout for an in-flight message.
 

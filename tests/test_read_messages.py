@@ -76,9 +76,10 @@ async def test_read_message_and_fin_twice(nsqd):
     assert message.can_be_processed
     await message.fin()
 
-    with pytest.raises(RuntimeWarning) as warning:
+    with pytest.raises(
+        RuntimeWarning, match=r"Message id=[^ ]+ has already been processed"
+    ):
         await message.fin()
-    assert str(warning.value) == "Message has already been processed"
 
     await nsq.close()
     assert nsq.is_closed
@@ -201,7 +202,7 @@ async def test_timeout_messages(nsqd, caplog):
         await message.fin()
         break
 
-    error_log_regex = re.compile(r"Message with id=[^ ]+ is timed out")
+    error_log_regex = re.compile(r"Message id=[^ ]+ is timed out")
     assert error_log_regex.search(caplog.text) is not None
 
     message = await asyncio.wait_for(nsq.message_queue.get(), timeout=1)

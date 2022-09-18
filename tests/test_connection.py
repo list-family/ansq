@@ -67,6 +67,7 @@ async def test_invalid_feature(create_nsqd, wait_for, nsqd):
     assert nsq.status.is_closed
 
 
+@pytest.mark.asyncio
 async def test_connection_options_as_kwargs(nsqd):
     nsq = await open_connection(debug=True)
     assert nsq._options.debug is True

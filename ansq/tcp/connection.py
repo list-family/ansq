@@ -552,7 +552,7 @@ class NSQConnection(NSQConnectionBase):
             if message is None:
                 return
             if message.is_timed_out:
-                self.logger.error(f"Message with id={message.id} is timed out")
+                self.logger.error(f"Message id={message.id} is timed out")
                 continue
             yield message
 
