@@ -1,5 +1,6 @@
+import asyncio
 import json
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Optional, Type, TypeVar
 
 import aiohttp
 
@@ -12,17 +13,38 @@ if TYPE_CHECKING:
     from asyncio.events import AbstractEventLoop
 
 
+_T = TypeVar("_T", bound="NSQHTTPConnection")
+
+
 class NSQHTTPConnection:
     """XXX"""
 
     def __init__(
-        self, host: str = "127.0.0.1", port: int = 4151, *, loop: "AbstractEventLoop",
+        self,
+        host: str = "127.0.0.1",
+        port: int = 4151,
+        *,
+        loop: Optional["AbstractEventLoop"] = None,
     ) -> None:
-        self._loop = loop
+        self._loop = loop or asyncio.get_event_loop()
         self._endpoint = (host, port)
         self._base_url = "http://{}:{}/".format(*self._endpoint)
 
         self._session = aiohttp.ClientSession()
+
+    @classmethod
+    def from_address(
+        cls: Type[_T],
+        address: str,
+        loop: Optional["AbstractEventLoop"] = None,
+    ) -> _T:
+        try:
+            host, port_str = address.split(":")
+            port = int(port_str)
+        except ValueError:
+            raise ValueError(f"Invalid address: {address}")
+
+        return cls(host=host, port=port, loop=loop)
 
     @property
     def endpoint(self) -> str:

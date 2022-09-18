@@ -17,7 +17,7 @@ class NSQResponseSchema:
 
     def __repr__(self) -> str:
         return "<NSQResponseSchema frame_type:{}, body:{!r}, is_ok:{}>".format(
-            self.frame_type, self.body, self.is_ok,
+            self.frame_type, self.body, self.is_ok
         )
 
     def __bool__(self) -> bool:
@@ -42,6 +42,10 @@ class NSQResponseSchema:
     @property
     def is_error(self) -> bool:
         return self.frame_type.is_error
+
+    @property
+    def text(self) -> str:
+        return self.body.decode("utf-8")
 
 
 class NSQMessageSchema(NSQResponseSchema):
@@ -77,14 +81,14 @@ class NSQErrorSchema(NSQResponseSchema):
     code: str
 
     def __init__(
-        self, code: bytes, body: bytes, frame_type: Union[FrameType, int],
+        self, code: bytes, body: bytes, frame_type: Union[FrameType, int]
     ) -> None:
         super().__init__(body, frame_type)
         self.code = code.decode("utf-8")
 
     def __repr__(self) -> str:
         return "<NSQErrorSchema frame_type:{}, body:{!r}, code:{}>".format(
-            self.frame_type, self.body, self.code,
+            self.frame_type, self.body, self.code
         )
 
     def __bool__(self) -> bool:

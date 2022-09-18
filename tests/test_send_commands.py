@@ -9,7 +9,7 @@ from ansq.tcp.exceptions import ConnectionClosedError
 
 
 @pytest.mark.asyncio
-async def test_command_pub():
+async def test_command_pub(nsqd):
     nsq = await open_connection()
     assert nsq.status.is_connected
 
@@ -21,7 +21,7 @@ async def test_command_pub():
 
 
 @pytest.mark.asyncio
-async def test_command_pub_after_reconnect():
+async def test_command_pub_after_reconnect(nsqd):
     nsq = await open_connection()
     assert nsq.status.is_connected
 
@@ -39,7 +39,7 @@ async def test_command_pub_after_reconnect():
 
 
 @pytest.mark.asyncio
-async def test_command_mpub():
+async def test_command_mpub(nsqd):
     nsq = await open_connection()
     assert nsq.status.is_connected
 
@@ -53,7 +53,7 @@ async def test_command_mpub():
 
 
 @pytest.mark.asyncio
-async def test_command_without_identity():
+async def test_command_without_identity(nsqd):
     nsq = NSQConnection()
     await nsq.connect()
     assert nsq.status.is_connected
@@ -66,12 +66,12 @@ async def test_command_without_identity():
 
 
 @pytest.mark.asyncio
-async def test_command_without_connection():
+async def test_command_without_connection(nsqd):
     nsq = NSQConnection()
     assert nsq.status.is_init
 
     with pytest.raises(
-        AssertionError, match="^You should call `connect` method first$",
+        AssertionError, match="^You should call `connect` method first$"
     ):
         await nsq.pub("test_topic", "test_message")
 
@@ -80,7 +80,7 @@ async def test_command_without_connection():
 
 
 @pytest.mark.asyncio
-async def test_command_sub():
+async def test_command_sub(nsqd):
     nsq = NSQConnection()
     await nsq.connect()
     assert nsq.status.is_connected
@@ -93,7 +93,7 @@ async def test_command_sub():
 
 
 @pytest.mark.asyncio
-async def test_command_with_closed_connection():
+async def test_command_with_closed_connection(nsqd):
     nsq = await open_connection()
     await nsq.close()
 
@@ -102,7 +102,7 @@ async def test_command_with_closed_connection():
 
 
 @pytest.mark.asyncio
-async def test_command_with_concurrently_closed_connection():
+async def test_command_with_concurrently_closed_connection(nsqd):
     nsq = await open_connection()
 
     async def close():
@@ -114,5 +114,5 @@ async def test_command_with_concurrently_closed_connection():
 
     with pytest.raises(ConnectionClosedError, match="^Connection is closed$"):
         await asyncio.wait_for(
-            asyncio.gather(close(), blocking_wait_and_pub()), timeout=1,
+            asyncio.gather(close(), blocking_wait_and_pub()), timeout=1
         )

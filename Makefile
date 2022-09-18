@@ -1,7 +1,7 @@
 bump_version:
-	@echo 'Enter new version:'; \
+	@printf 'Enter new version: '; \
 	read new_version; \
-	echo "__version__ = '$${new_version}'" > ansq/__version__.py
+	sed -i"" -r "s/version = .*/version = $${new_version}/" setup.cfg
 
 dist:
 	rm -rf ansq.egg-info/ build/ dist/

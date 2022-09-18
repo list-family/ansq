@@ -4,7 +4,7 @@ from ansq.http.writer import NSQDHTTPWriter
 
 
 @pytest.fixture
-async def writer(event_loop):
+async def writer(event_loop, nsqd):
     http_writer = NSQDHTTPWriter(loop=event_loop)
     yield http_writer
     await http_writer.close()
@@ -82,9 +82,7 @@ async def test_empty_topic(writer):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize(
-    "method_name", ("topic_pause", "topic_unpause"),
-)
+@pytest.mark.parametrize("method_name", ("topic_pause", "topic_unpause"))
 async def test_pausable_topic(writer, method_name):
     topic = "test-pausable-topic"
     await writer.create_topic(topic)
@@ -95,9 +93,7 @@ async def test_pausable_topic(writer, method_name):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize(
-    "method_name", ("pause_channel", "unpause_channel"),
-)
+@pytest.mark.parametrize("method_name", ("pause_channel", "unpause_channel"))
 async def test_pausable_channel(writer, method_name):
     topic = "test-pausable-channel-topic"
     await writer.create_topic(topic)

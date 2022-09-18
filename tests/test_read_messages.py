@@ -8,7 +8,7 @@ from ansq.tcp.types import NSQMessage
 
 
 @pytest.mark.asyncio
-async def test_read_message():
+async def test_read_message(nsqd):
     nsq = await open_connection()
     assert nsq.status.is_connected
 
@@ -32,7 +32,7 @@ async def test_read_message():
 
 
 @pytest.mark.asyncio
-async def test_read_message_and_req():
+async def test_read_message_and_req(nsqd):
     nsq = await open_connection()
     assert nsq.status.is_connected
 
@@ -56,14 +56,14 @@ async def test_read_message_and_req():
 
 
 @pytest.mark.asyncio
-async def test_read_message_and_fin_twice():
+async def test_read_message_and_fin_twice(nsqd):
     nsq = await open_connection()
     assert nsq.status.is_connected
 
     timestamp = time()
 
     response = await nsq.pub(
-        "test_read_message_and_fin_twice", f"hello sent at {timestamp}",
+        "test_read_message_and_fin_twice", f"hello sent at {timestamp}"
     )
     assert response.is_ok
 
@@ -84,7 +84,7 @@ async def test_read_message_and_fin_twice():
 
 
 @pytest.mark.asyncio
-async def test_read_messages_via_generator():
+async def test_read_messages_via_generator(nsqd):
     nsq = await open_connection()
     assert nsq.status.is_connected
 
@@ -111,7 +111,7 @@ async def test_read_messages_via_generator():
 
 
 @pytest.mark.asyncio
-async def test_read_single_message_via_get_message():
+async def test_read_single_message_via_get_message(nsqd):
     nsq = await open_connection()
     assert nsq.status.is_connected
 
@@ -139,7 +139,7 @@ async def test_read_single_message_via_get_message():
 
 
 @pytest.mark.asyncio
-async def test_read_bytes_message():
+async def test_read_bytes_message(nsqd):
     nsq = await open_connection()
     assert nsq.status.is_connected
 
@@ -165,19 +165,21 @@ async def test_read_bytes_message():
 
 
 @pytest.mark.asyncio
-async def test_timeout_messages():
+async def test_timeout_messages(nsqd):
     nsq = await open_connection()
     assert nsq.status.is_connected
 
     first_message = "first test message at " + str(time())
     first_message_response = await nsq.pub(
-        "test_read_timed_out_messages", first_message,
+        "test_read_timed_out_messages",
+        first_message,
     )
     assert first_message_response.is_ok
 
     second_message = "second test message at " + str(time())
     second_message_response = await nsq.pub(
-        "test_read_timed_out_messages", second_message,
+        "test_read_timed_out_messages",
+        second_message,
     )
     assert second_message_response.is_ok
 
@@ -206,14 +208,15 @@ async def test_timeout_messages():
 
 
 @pytest.mark.asyncio
-async def test_read_message_and_touch():
+async def test_read_message_and_touch(nsqd):
     nsq = await open_connection()
     assert nsq.status.is_connected
 
     timestamp = time()
 
     response = await nsq.pub(
-        "test_read_message_and_touch", f"hello sent at {timestamp}",
+        "test_read_message_and_touch",
+        f"hello sent at {timestamp}",
     )
     assert response.is_ok
 

@@ -79,8 +79,8 @@ class NSQMessage:
     @property
     def is_processed(self) -> bool:
         """True if message has been processed:
-            * finished
-            * re-queued
+        * finished
+        * re-queued
         """
         return self._is_processed
 

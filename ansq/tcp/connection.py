@@ -1,10 +1,11 @@
 import asyncio
 import json
-import logging
 import sys
-from asyncio.events import AbstractEventLoop
+import warnings
 from datetime import datetime, timezone
-from typing import Any, AsyncGenerator, Callable, Optional, Union
+from typing import Any, AsyncGenerator, Callable, Mapping, Optional, Union
+
+import attr
 
 from ansq.tcp import consts
 from ansq.tcp.exceptions import (
@@ -14,6 +15,8 @@ from ansq.tcp.exceptions import (
     get_exception,
 )
 from ansq.tcp.types import (
+    ConnectionFeatures,
+    ConnectionOptions,
     ConnectionStatus,
     NSQCommands,
     NSQErrorSchema,
@@ -23,14 +26,19 @@ from ansq.tcp.types import (
 )
 from ansq.tcp.types import TCPConnection as NSQConnectionBase
 from ansq.typedefs import TCPResponse
-from ansq.utils import validate_topic_channel_name
+from ansq.utils import truncate_text, validate_topic_channel_name
+
+# Auto reconnect settings
+AUTO_RECONNECT_INITIAL_INTERVAL = 2
+AUTO_RECONNECT_MAX_INTERVAL = 2048
+AUTO_RECONNECT_PROGRESSION_RATIO = 2
 
 
 class NSQConnection(NSQConnectionBase):
     async def connect(self) -> bool:
         """Open connection"""
         self._reader, self._writer = await asyncio.open_connection(
-            self._host, self._port,
+            self._host, self._port
         )
 
         self._writer.write(NSQCommands.MAGIC_V2)
@@ -59,7 +67,7 @@ class NSQConnection(NSQConnectionBase):
         self.logger.debug(f"Reconnecting to {self.endpoint}...")
         self._status = ConnectionStatus.RECONNECTING
 
-        await self._do_close(change_status=False)
+        await self._do_close(change_status=False, silent=True)
         try:
             await self.connect()
             await self.identify()
@@ -68,7 +76,7 @@ class NSQConnection(NSQConnectionBase):
                 assert self._topic is not None
                 assert self._channel is not None
                 await self.subscribe(
-                    self._topic, self._channel, self.rdy_messages_count,
+                    self._topic, self._channel, self.rdy_messages_count
                 )
         except Exception as e:
             if raise_error:
@@ -81,8 +89,45 @@ class NSQConnection(NSQConnectionBase):
         self._status = ConnectionStatus.CONNECTED
         return True
 
+    async def _do_auto_reconnect(
+        self, interval: int = AUTO_RECONNECT_INITIAL_INTERVAL
+    ) -> None:
+        """Call ``reconnect()`` method. If failed, sleep and try again."""
+        if not self._auto_reconnect:
+            return
+
+        # Reconnect silently
+        try:
+            reconnected = await self.reconnect()
+        except Exception as exc:
+            await self._do_close(exc, change_status=False, silent=True)
+            reconnected = False
+
+        # Return early if succeeded
+        if reconnected:
+            return
+
+        # Don't sleep more than max interval
+        if interval > AUTO_RECONNECT_MAX_INTERVAL:
+            interval = AUTO_RECONNECT_MAX_INTERVAL
+
+        self.logger.debug(
+            "Failed to reconnect to %s. Wait for %s seconds ...",
+            self.endpoint,
+            interval,
+        )
+
+        # Reconnection is failed - sleep and schedule new reconnect
+        await asyncio.sleep(interval)
+        self._reconnect_task = self._loop.create_task(
+            self._do_auto_reconnect(interval * AUTO_RECONNECT_PROGRESSION_RATIO),
+        )
+
     async def _do_close(
-        self, exception: Optional[Exception] = None, change_status: bool = True
+        self,
+        error: Optional[Union[Exception, str]] = None,
+        change_status: bool = True,
+        silent: bool = False,
     ) -> None:
         if self.is_closed or self.status.is_init or self.status.is_closing:
             return
@@ -90,14 +135,15 @@ class NSQConnection(NSQConnectionBase):
         if change_status:
             self._status = ConnectionStatus.CLOSING
 
-        if exception:
-            self.logger.error(
-                "Connection {} is closing due an error: {}".format(
-                    self.endpoint, exception,
-                ),
-            )
-        else:
-            self.logger.debug(f"Connection {self.endpoint} is closing...")
+        if not silent:
+            if error is not None:
+                self.logger.error(
+                    "Connection {} is closing due an error: {}".format(
+                        self.endpoint, error
+                    ),
+                )
+            else:
+                self.logger.debug(f"Connection {self.endpoint} is closing...")
 
         if self.is_subscribed and change_status:
             self._is_subscribed = False
@@ -109,6 +155,11 @@ class NSQConnection(NSQConnectionBase):
             self._reader_task.cancel()
             try:
                 await self._reader_task
+            except asyncio.CancelledError:
+                # The task is cancelled - don't log useless exception trace
+                # TODO: In the future look further for reasons a task could
+                #       appear cancelled here
+                pass
             except Exception as e:
                 self.logger.exception(e)
 
@@ -116,6 +167,9 @@ class NSQConnection(NSQConnectionBase):
             self._reconnect_task.cancel()
             try:
                 await self._reconnect_task
+            except asyncio.CancelledError:
+                # The task is cancelled - don't log useless exception trace
+                pass
             except Exception as e:
                 self.logger.exception(e)
 
@@ -124,8 +178,8 @@ class NSQConnection(NSQConnectionBase):
             self._writer.close()
             if sys.version_info >= (3, 7):
                 await self._writer.wait_closed()
-        finally:
-            pass
+        except Exception as e:
+            self.logger.exception(e)
 
         for future, callback in self._cmd_waiters:
             if not future.cancelled():
@@ -136,6 +190,9 @@ class NSQConnection(NSQConnectionBase):
             self._message_queue.get_nowait()
 
         if change_status:
+            if self._on_close is not None:
+                self._on_close(self)
+
             self._status = ConnectionStatus.CLOSED
             self.logger.debug(f"Connection {self.endpoint} is closed")
 
@@ -207,17 +264,55 @@ class NSQConnection(NSQConnectionBase):
         return await future
 
     async def identify(
-        self, config: Optional[Union[dict, str]] = None, **kwargs: Any
+        self,
+        config: Optional[Union[dict, str]] = None,
+        *,
+        features: Optional[ConnectionFeatures] = None,
+        **kwargs: Any,
     ) -> TCPResponse:
-        if config and isinstance(config, (dict, str)):
-            raise TypeError("Config should be dict type or str")
+        """Executes `IDENTIFY` command.
 
-        if config or kwargs:
-            self._config = config or kwargs
-        config = json.dumps(self._config)
+        Connection features are being determined in the following order: `features`,
+        `config` (deprecated), `kwargs` (deprecated).
+
+        If any of `features`, `config`, `kwargs` exist features defined in `__init__`
+        method will be ignored.
+        """
+        # handle deprecated args
+        if config is not None:
+            if not isinstance(config, (dict, str)):
+                raise TypeError("Config should be dict type or str")
+            warnings.warn(
+                message=(
+                    "`config` argument for `NSQConnection.identify` is deprecated: "
+                    "use `features` argument instead"
+                ),
+                category=DeprecationWarning,
+            )
+            if isinstance(config, dict):
+                features = ConnectionFeatures(**config)
+        elif kwargs:
+            warnings.warn(
+                message=(
+                    "Passing keyword arguments to `NSQConnection.identify` is "
+                    "deprecated: use `features` argument instead"
+                ),
+                category=DeprecationWarning,
+            )
+            features = ConnectionFeatures(**kwargs)
+
+        # update options with features passed as arguments to this method
+        if features is not None:
+            self._options = attr.evolve(self._options, features=features)
+
+        # maybe handle `config` argument passed as a string
+        if features is None and isinstance(config, str):
+            features_data = config
+        else:
+            features_data = json.dumps(attr.asdict(self._options.features))
 
         response = await self.execute(
-            NSQCommands.IDENTIFY, data=config, callback=self._start_upgrading,
+            NSQCommands.IDENTIFY, data=features_data, callback=self._start_upgrading
         )
 
         if response in (NSQCommands.OK, NSQCommands.OK.decode()):
@@ -225,7 +320,19 @@ class NSQConnection(NSQConnectionBase):
             return response
 
         assert isinstance(response, NSQResponseSchema)
-        response_config = json.loads(response.body)
+
+        # failed to update client metadata on the server and negotiate features
+        if response.is_error:
+            await self._do_close(error=response.text)
+            return response
+
+        try:
+            response_config = json.loads(response.body)
+        except ValueError as exc:
+            self.logger.error("failed to parse IDENTIFY response - %r", response.body)
+            await self._do_close(error=exc)
+            return response
+
         fut = None
 
         if response_config.get("auth_required"):
@@ -269,16 +376,16 @@ class NSQConnection(NSQConnectionBase):
                 return
 
             self._parser.feed(data)
-            not self._is_upgrading and await self._read_buffer()
 
-        self.logger.info("Lost connection to NSQ")
+            if not self._is_upgrading:
+                await self._read_buffer()
+
+        self.logger.info("Lost connection to NSQ %s", self.endpoint)
         if self._auto_reconnect:
             await asyncio.sleep(1)
-            self._reconnect_task = self._loop.create_task(
-                self.reconnect(raise_error=False),
-            )
+            self._reconnect_task = self._loop.create_task(self._do_auto_reconnect())
         else:
-            await self._do_close(OSError("Lost connection to NSQ"))
+            await self._do_close()
 
     async def _parse_data(self) -> bool:
         try:
@@ -295,13 +402,13 @@ class NSQConnection(NSQConnectionBase):
             await self._pulse()
             return True
 
-        self.logger.debug("NSQ: Got data: %s", response)
+        self.logger.debug("NSQ: Got data: %s", truncate_text(str(response)))
 
         if response.is_message:
             assert isinstance(response, NSQMessageSchema)
             # track number in flight messages
             self._in_flight += 1
-            self._on_message_hook(response)
+            await self._on_message_hook(response)
             return True
 
         future: asyncio.Future
@@ -324,7 +431,7 @@ class NSQConnection(NSQConnectionBase):
 
         return True
 
-    def _on_message_hook(self, message_schema: NSQMessageSchema) -> None:
+    async def _on_message_hook(self, message_schema: NSQMessageSchema) -> None:
         self._last_message_time = datetime.now(tz=timezone.utc)
         message = NSQMessage(message_schema, self)
 
@@ -332,7 +439,7 @@ class NSQConnection(NSQConnectionBase):
             try:
                 message = self._on_message(message)
             except Exception as e:
-                self._do_close(e)
+                await self._do_close(e)
         self._message_queue.put_nowait(message)
 
     async def _read_buffer(self) -> None:
@@ -394,7 +501,7 @@ class NSQConnection(NSQConnectionBase):
     async def rdy(self, messages_count: int = 1) -> None:
         """Update RDY state (indicate you are ready to receive N messages)"""
         assert isinstance(
-            messages_count, int,
+            messages_count, int
         ), "Argument messages_count should be positive integer"
         assert messages_count >= 0, "Argument messages_count should be positive integer"
 
@@ -477,38 +584,18 @@ async def open_connection(
     host: str = "localhost",
     port: int = 4150,
     *,
-    message_queue: asyncio.Queue = None,
-    on_message: Callable = None,
-    on_exception: Callable = None,
-    loop: AbstractEventLoop = None,
-    auto_reconnect: bool = True,
-    heartbeat_interval: int = 30000,
-    feature_negotiation: bool = True,
-    tls_v1: bool = False,
-    snappy: bool = False,
-    deflate: bool = False,
-    deflate_level: int = 6,
-    sample_rate: int = 0,
-    debug: bool = False,
-    logger: logging.Logger = None,
+    connection_options: ConnectionOptions = ConnectionOptions(),
+    **kwargs: Mapping[str, Any],
 ) -> NSQConnection:
+    """A helper to create and open an `NSQConnection`.
+
+    If `connection_options` is defined other keyword args are being ignored.
+    """
     nsq = NSQConnection(
         host,
         port,
-        message_queue=message_queue,
-        on_message=on_message,
-        on_exception=on_exception,
-        loop=loop,
-        auto_reconnect=auto_reconnect,
-        heartbeat_interval=heartbeat_interval,
-        feature_negotiation=feature_negotiation,
-        tls_v1=tls_v1,
-        snappy=snappy,
-        deflate=deflate,
-        deflate_level=deflate_level,
-        sample_rate=sample_rate,
-        debug=debug,
-        logger=logger,
+        connection_options=connection_options,
+        **kwargs,
     )
     await nsq.connect()
     await nsq.identify()
