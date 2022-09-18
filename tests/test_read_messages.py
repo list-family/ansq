@@ -1,4 +1,5 @@
 import asyncio
+import re
 from time import time
 
 import pytest
@@ -165,10 +166,10 @@ async def test_read_bytes_message(nsqd):
 
 
 @pytest.mark.asyncio
-async def test_timeout_messages(nsqd):
+async def test_timeout_messages(nsqd, caplog):
     nsq = await open_connection(
         connection_options=ConnectionOptions(
-            features=ConnectionFeatures(msg_timeout=1000)
+            features=ConnectionFeatures(msg_timeout=1000),
         )
     )
     assert nsq.status.is_connected
@@ -199,6 +200,9 @@ async def test_timeout_messages(nsqd):
         assert message.attempts == 1
         await message.fin()
         break
+
+    error_log_regex = re.compile(r"Message with id=[^ ]+ is timed out")
+    assert error_log_regex.search(caplog.text) is not None
 
     message = await asyncio.wait_for(nsq.message_queue.get(), timeout=1)
     assert message.can_be_processed
