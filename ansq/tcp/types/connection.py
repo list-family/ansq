@@ -31,11 +31,11 @@ class ConnectionFeatures:
     deflate: bool = False
     deflate_level: int = 6
     feature_negotiation: bool = True
-    heartbeat_interval: int = 30000
+    heartbeat_interval: int = 30_000
     sample_rate: int = 0
     snappy: bool = False
     tls_v1: bool = False
-    msg_timeout: int = attr.ib(default=60000)
+    msg_timeout: int = 60_000
 
 
 @attr.define(frozen=True, auto_attribs=True, kw_only=True)
