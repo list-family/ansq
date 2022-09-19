@@ -1,6 +1,7 @@
 import pytest
 
 from ansq import ConnectionFeatures, ConnectionOptions, open_connection
+from ansq.tcp.types import NSQCommands
 
 
 @pytest.mark.asyncio
@@ -86,3 +87,19 @@ async def test_invalid_kwarg(nsqd):
         TypeError, match="got an unexpected keyword argument: 'invalid_kwarg'"
     ):
         await open_connection(invalid_kwarg=1)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "cmd", (NSQCommands.RDY, NSQCommands.FIN, NSQCommands.TOUCH, NSQCommands.REQ)
+)
+async def test_errors_from_commands_without_responses(nsqd, wait_for, cmd, caplog):
+    nsq = await open_connection()
+
+    response = await nsq.execute(cmd)
+    await wait_for(lambda: caplog.messages)
+    await nsq.close()
+
+    expected_log = f"[E_INVALID] cannot {cmd.decode('utf8')} in current state"
+    assert expected_log in caplog.text
+    assert response is None

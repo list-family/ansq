@@ -93,3 +93,7 @@ class NSQErrorSchema(NSQResponseSchema):
 
     def __bool__(self) -> bool:
         return False
+
+    @property
+    def text(self) -> str:
+        return f"[{self.code}] {super().text}"
