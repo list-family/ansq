@@ -31,10 +31,11 @@ class ConnectionFeatures:
     deflate: bool = False
     deflate_level: int = 6
     feature_negotiation: bool = True
-    heartbeat_interval: int = 30000
+    heartbeat_interval: int = 30_000
     sample_rate: int = 0
     snappy: bool = False
     tls_v1: bool = False
+    msg_timeout: int = 60_000
 
 
 @attr.define(frozen=True, auto_attribs=True, kw_only=True)
@@ -208,6 +209,10 @@ class TCPConnection(abc.ABC):
     def is_closed(self) -> bool:
         """True if connection is closed or closing."""
         return self.status.is_closed or self._status.is_closing
+
+    @property
+    def options(self) -> ConnectionOptions:
+        return self._options
 
     @abc.abstractmethod
     async def connect(self) -> bool:

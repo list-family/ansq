@@ -561,6 +561,9 @@ class NSQConnection(NSQConnectionBase):
             message = await self._message_queue.get()
             if message is None:
                 return
+            if message.is_timed_out:
+                self.logger.error(f"Message id={message.id} is timed out")
+                continue
             yield message
 
     def get_message(self) -> Optional[NSQMessage]:
