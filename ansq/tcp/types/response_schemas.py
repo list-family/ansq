@@ -17,8 +17,9 @@ class NSQResponseSchema:
         )
 
     def __repr__(self) -> str:
-        return "<NSQResponseSchema frame_type:{}, body:{!r}, is_ok:{}>".format(
-            self.frame_type, self.body, self.is_ok
+        return (
+            f"<NSQResponseSchema frame_type:{self.frame_type},"
+            f" body:{truncate(self.body)!r}, is_ok:{self.is_ok}>"
         )
 
     def __bool__(self) -> bool:
