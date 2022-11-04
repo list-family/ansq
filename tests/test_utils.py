@@ -11,6 +11,7 @@ from ansq.utils import truncate_text
         pytest.param("0123456789", 9, "012345678...", id="trunc"),
         pytest.param("0123456789", 1, "0...", id="minimal trunc"),
         pytest.param("", 10, "", id="empty string"),
+        pytest.param(b"0123456789", 9, b"012345678...", id="trunc bytes"),
     ),
 )
 def test_truncate_text(text, limit, expected):

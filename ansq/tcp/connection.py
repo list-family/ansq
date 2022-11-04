@@ -402,7 +402,8 @@ class NSQConnection(NSQConnectionBase):
             await self._pulse()
             return True
 
-        self.logger.debug("NSQ: Got data: %s", truncate_text(str(response)))
+        if self._debug:
+            self.logger.debug("NSQ: Got data: %s", response)
 
         if response.is_message:
             assert isinstance(response, NSQMessageSchema)

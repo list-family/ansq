@@ -1,6 +1,7 @@
 import json
 import logging
 import re
+import typing
 from datetime import datetime
 from decimal import Decimal
 from enum import Enum
@@ -179,9 +180,14 @@ def get_logger(
     return logger
 
 
-def truncate_text(text: str, limit: int = 256) -> str:
+def truncate_text(
+    text: typing.Union[bytes, str], limit: int = 256
+) -> typing.Union[bytes, str]:
     """Truncate a given `text` if the `limit` is reached"""
     if limit <= 0:
         raise ValueError("limit must be greater than 0")
 
-    return text[:limit] + "..." if len(text) > limit else text
+    if len(text) <= limit:
+        return text
+
+    return text[:limit] + b"..." if isinstance(text, bytes) else text[:limit] + "..."
