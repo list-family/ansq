@@ -270,7 +270,7 @@ class Lookupd:
     async def _do_query_lookup(
         self, lookupd_connection: "NsqLookupd"
     ) -> List["Address"]:
-        """Query lookup with a given connection."""
+        """Query lookup with a given connection and return producer addresses."""
         # Lookup for the reader's topic
         self._logger.debug("Query %s", lookupd_connection)
         lookup_response = await lookupd_connection.lookup(self._reader.topic)
