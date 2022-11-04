@@ -1,5 +1,6 @@
 from typing import Union
 
+from ...utils import truncate
 from . import FrameType, NSQCommands
 
 
@@ -16,8 +17,9 @@ class NSQResponseSchema:
         )
 
     def __repr__(self) -> str:
-        return "<NSQResponseSchema frame_type:{}, body:{!r}, is_ok:{}>".format(
-            self.frame_type, self.body, self.is_ok
+        return (
+            f"<NSQResponseSchema frame_type:{self.frame_type},"
+            f" body:{truncate(self.body)!r}, is_ok:{self.is_ok}>"
         )
 
     def __bool__(self) -> bool:
@@ -70,9 +72,10 @@ class NSQMessageSchema(NSQResponseSchema):
 
     def __repr__(self) -> str:
         return (
-            "<NSQMessageSchema frame_type:{}, body:{!r}, timestamp:{}, "
-            "attempts:{}, id:{}>"
-        ).format(self.frame_type, self.body, self.timestamp, self.attempts, self.id)
+            f"<NSQMessageSchema frame_type:{self.frame_type},"
+            f" body:{truncate(self.body)!r}, timestamp:{self.timestamp},"
+            f" attempts:{self.attempts}, id:{self.id}>"
+        )
 
 
 class NSQErrorSchema(NSQResponseSchema):
