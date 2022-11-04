@@ -73,7 +73,7 @@ class NSQMessageSchema(NSQResponseSchema):
     def __repr__(self) -> str:
         return (
             f"<NSQMessageSchema frame_type:{self.frame_type},"
-            f" body:{truncate(self.body)!r}, timestamp:{self.timestamp}, "
+            f" body:{truncate(self.body)!r}, timestamp:{self.timestamp},"
             f" attempts:{self.attempts}, id:{self.id}>"
         )
 
