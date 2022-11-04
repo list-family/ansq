@@ -1,6 +1,5 @@
 import asyncio
 import json
-import sys
 import warnings
 from datetime import datetime, timezone
 from typing import Any, AsyncGenerator, Callable, Mapping, Optional, Union
@@ -176,8 +175,7 @@ class NSQConnection(NSQConnectionBase):
         assert self._writer is not None
         try:
             self._writer.close()
-            if sys.version_info >= (3, 7):
-                await self._writer.wait_closed()
+            await self._writer.wait_closed()
         except Exception as e:
             self.logger.exception(e)
 
