@@ -203,13 +203,13 @@ class Lookupd:
         ]
 
     async def query_lookup(self) -> None:
-        """Query lookupd for topic producers."""
+        """Query lookupd for topic producers and connect to them."""
         # Get lookupd connection in a round robin fashion way
         lookupd_connection = self._get_lookupd_connection()
 
         # Try to query lookupd connection
         try:
-            await self._do_query_lookup(lookupd_connection)
+            producer_addresses = await self._do_query_lookup(lookupd_connection)
         except Exception as exc:
             self._logger.error(
                 "Failed to query lookupd %s due to: %s",
@@ -217,6 +217,11 @@ class Lookupd:
                 exc,
                 exc_info=exc if self._debug else False,
             )
+            return
+
+        # Connect to all producers addresses
+        for address in producer_addresses:
+            await self._reader.connect_to_nsqd(address.host, address.port)
 
     async def poll_lookup(self) -> NoReturn:
         """Poll ``query_lookup()`` infinitely."""
@@ -262,7 +267,9 @@ class Lookupd:
         self._query_lookupd_attempts += 1
         return lookupd_connection
 
-    async def _do_query_lookup(self, lookupd_connection: "NsqLookupd") -> None:
+    async def _do_query_lookup(
+        self, lookupd_connection: "NsqLookupd"
+    ) -> List["Address"]:
         """Query lookup with a given connection."""
         # Lookup for the reader's topic
         self._logger.debug("Query %s", lookupd_connection)
@@ -271,11 +278,7 @@ class Lookupd:
             raise ValueError(f"lookup response must be a dict: {lookup_response}")
 
         # Get producers from the result response
-        producer_addresses = self._get_producer_addresses(lookup_response)
-
-        # Connect to all producers addresses
-        for address in producer_addresses:
-            await self._reader.connect_to_nsqd(address.host, address.port)
+        return self._get_producer_addresses(lookup_response)
 
     @staticmethod
     def _get_producer_addresses(response: Dict[str, Any]) -> List["Address"]:
