@@ -26,7 +26,7 @@ from ansq.tcp.types import (
 )
 from ansq.tcp.types import TCPConnection as NSQConnectionBase
 from ansq.typedefs import TCPResponse
-from ansq.utils import truncate_text, validate_topic_channel_name
+from ansq.utils import validate_topic_channel_name
 
 # Auto reconnect settings
 AUTO_RECONNECT_INITIAL_INTERVAL = 2
@@ -421,7 +421,7 @@ class NSQConnection(NSQConnectionBase):
         # non-error responses must have a command waiter, otherwise,
         # it's more likely a bug
         if not self._cmd_waiters:  # pragma: no cover
-            self.logger.error("Unexpected response: %s", truncate_text(response.text))
+            self.logger.error("Unexpected response: %s", response)
             return False
 
         future, callback = self._cmd_waiters.popleft()

@@ -1,6 +1,6 @@
 from typing import Union
 
-from ...utils import truncate_text
+from ...utils import truncate
 from . import FrameType, NSQCommands
 
 
@@ -72,7 +72,7 @@ class NSQMessageSchema(NSQResponseSchema):
     def __repr__(self) -> str:
         return (
             f"<NSQMessageSchema frame_type:{self.frame_type},"
-            f" body:{truncate_text(self.body)!r}, timestamp:{self.timestamp}, "
+            f" body:{truncate(self.body)!r}, timestamp:{self.timestamp}, "
             f" attempts:{self.attempts}, id:{self.id}>"
         )
 
