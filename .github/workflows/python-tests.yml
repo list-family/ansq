@@ -21,13 +21,14 @@ jobs:
           - "3.8"
           - "3.9"
           - "3.10"
+          - "3.11"
         nsq-version:
           - "nsq-1.1.0.linux-amd64.go1.10.3"
           - "nsq-1.2.0.linux-amd64.go1.12.9"
           - "nsq-1.2.1.linux-amd64.go1.16.6"
         include:
           - os: Ubuntu
-            python-version: "3.11-dev"
+            python-version: "3.12-dev"
             nsq-version: "nsq-1.2.1.linux-amd64.go1.16.6"
     env:
       PY_COLORS: 1
