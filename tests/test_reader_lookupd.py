@@ -2,8 +2,6 @@ import pytest
 
 from ansq import create_reader, create_writer
 
-pytestmark = pytest.mark.asyncio
-
 
 @pytest.fixture(autouse=True)
 async def nsqd(tmp_path, create_nsqd, nsqlookupd):

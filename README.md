@@ -201,3 +201,25 @@ if __name__ == '__main__':
     loop.run_until_complete(nsq_connection.close())
 
 ```
+
+
+## Contributing
+
+Create and activate a development virtual environment.
+
+```bash
+python -m venv venv
+source venv/bin/activate
+```
+
+Install `ansq` in editable mode and its testing dependencies.
+
+```bash
+pip install -e .[testing]
+```
+
+Run tests.
+
+```bash
+pytest
+```
