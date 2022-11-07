@@ -156,10 +156,10 @@ class Reader(Client):
 
     async def close(self) -> None:
         """Close all connections."""
-        await super().close()
-
         if self._lookupd is not None:
             await self._lookupd.close()
+
+        await super().close()
 
 
 class Lookupd:
