@@ -13,8 +13,6 @@ import pytest
 
 from ansq.http import NSQDHTTPWriter, NsqLookupd
 
-pytestmark = pytest.mark.asyncio
-
 
 class BaseNSQServer(abc.ABC):
     """Base async nsq server. Required installed NSQ binaries."""

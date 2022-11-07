@@ -8,7 +8,6 @@ from ansq.tcp.connection import NSQConnection
 from ansq.tcp.exceptions import ConnectionClosedError
 
 
-@pytest.mark.asyncio
 async def test_command_pub(nsqd):
     nsq = await open_connection()
     assert nsq.status.is_connected
@@ -20,7 +19,6 @@ async def test_command_pub(nsqd):
     assert nsq.is_closed
 
 
-@pytest.mark.asyncio
 async def test_command_pub_after_reconnect(nsqd):
     nsq = await open_connection()
     assert nsq.status.is_connected
@@ -38,7 +36,6 @@ async def test_command_pub_after_reconnect(nsqd):
     assert nsq.is_closed
 
 
-@pytest.mark.asyncio
 async def test_command_mpub(nsqd):
     nsq = await open_connection()
     assert nsq.status.is_connected
@@ -52,7 +49,6 @@ async def test_command_mpub(nsqd):
     assert nsq.is_closed
 
 
-@pytest.mark.asyncio
 async def test_command_without_identity(nsqd):
     nsq = NSQConnection()
     await nsq.connect()
@@ -65,7 +61,6 @@ async def test_command_without_identity(nsqd):
     assert nsq.is_closed
 
 
-@pytest.mark.asyncio
 async def test_command_without_connection(nsqd):
     nsq = NSQConnection()
     assert nsq.status.is_init
@@ -79,7 +74,6 @@ async def test_command_without_connection(nsqd):
     assert nsq.status.is_init
 
 
-@pytest.mark.asyncio
 async def test_command_sub(nsqd):
     nsq = NSQConnection()
     await nsq.connect()
@@ -92,7 +86,6 @@ async def test_command_sub(nsqd):
     assert nsq.is_closed
 
 
-@pytest.mark.asyncio
 async def test_command_with_closed_connection(nsqd):
     nsq = await open_connection()
     await nsq.close()
@@ -101,7 +94,6 @@ async def test_command_with_closed_connection(nsqd):
         await nsq.pub("test_topic", "test_message")
 
 
-@pytest.mark.asyncio
 async def test_command_with_concurrently_closed_connection(nsqd):
     nsq = await open_connection()
 
