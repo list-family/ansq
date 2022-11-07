@@ -215,7 +215,7 @@ source venv/bin/activate
 Install `ansq` in editable mode and its testing dependencies.
 
 ```bash
-pip install -e .[testing]
+python -m pip install -e .[testing]
 ```
 
 Run tests.
