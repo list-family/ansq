@@ -42,6 +42,7 @@ A simple consumer reads messages from "example_topic" and prints them to stdout.
 
 ```python
 import asyncio
+
 import ansq
 
 
@@ -68,6 +69,7 @@ A simple producer sends a "Hello, world!" message to "example_topic".
 
 ```python
 import asyncio
+
 import ansq
 
 
