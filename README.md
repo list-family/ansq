@@ -9,7 +9,7 @@ Written with native Asyncio NSQ package
 ## Installation
 
 ```commandline
-python -m pip instll ansq
+python -m pip install ansq
 ```
 
 ## Overview
