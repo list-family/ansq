@@ -1,5 +1,6 @@
 import abc
 import asyncio
+import contextlib
 import inspect
 import os
 import shutil
@@ -8,12 +9,9 @@ import time
 from asyncio.subprocess import Process
 from typing import Awaitable, Callable, List, Optional, Sequence, Type, Union
 
-import async_generator
 import pytest
 
 from ansq.http import NSQDHTTPWriter, NsqLookupd
-
-pytestmark = pytest.mark.asyncio
 
 
 class BaseNSQServer(abc.ABC):
@@ -157,7 +155,7 @@ class NSQLookupD(BaseNSQServer):
 
 @pytest.fixture
 def create_nsqd(tmp_path):
-    @async_generator.asynccontextmanager
+    @contextlib.asynccontextmanager
     async def _create_nsqd(
         host="127.0.0.1",
         port=4150,
@@ -187,7 +185,7 @@ def create_nsqd(tmp_path):
 
 @pytest.fixture
 def create_nsqlookupd():
-    @async_generator.asynccontextmanager
+    @contextlib.asynccontextmanager
     async def _create_nsqlookupd(host="127.0.0.1", port=4160, http_port=4161):
         nsqlookupd = NSQLookupD(host=host, port=port, http_port=http_port)
         try:

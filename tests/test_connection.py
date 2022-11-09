@@ -4,7 +4,6 @@ from ansq import ConnectionFeatures, ConnectionOptions, open_connection
 from ansq.tcp.types import NSQCommands
 
 
-@pytest.mark.asyncio
 async def test_connection(nsqd):
     nsq = await open_connection()
     assert nsq.status.is_connected
@@ -13,7 +12,6 @@ async def test_connection(nsqd):
     assert nsq.status.is_closed
 
 
-@pytest.mark.asyncio
 async def test_reconnect_after_close(nsqd):
     nsq = await open_connection()
     assert nsq.status.is_connected
@@ -28,7 +26,6 @@ async def test_reconnect_after_close(nsqd):
     assert nsq.status.is_closed
 
 
-@pytest.mark.asyncio
 async def test_reconnect_while_connected(nsqd):
     nsq = await open_connection()
     assert nsq.status.is_connected
@@ -40,7 +37,6 @@ async def test_reconnect_while_connected(nsqd):
     assert nsq.status.is_closed
 
 
-@pytest.mark.asyncio
 async def test_auto_reconnect(nsqd, wait_for):
     nsq = await open_connection(
         connection_options=ConnectionOptions(auto_reconnect=True)
@@ -57,7 +53,6 @@ async def test_auto_reconnect(nsqd, wait_for):
     assert nsq.status.is_closed
 
 
-@pytest.mark.asyncio
 async def test_invalid_feature(create_nsqd, wait_for, nsqd):
     nsq = await open_connection(
         connection_options=ConnectionOptions(
@@ -68,21 +63,18 @@ async def test_invalid_feature(create_nsqd, wait_for, nsqd):
     assert nsq.status.is_closed
 
 
-@pytest.mark.asyncio
 async def test_connection_options_as_kwargs(nsqd):
     nsq = await open_connection(debug=True)
     assert nsq._options.debug is True
     await nsq.close()
 
 
-@pytest.mark.asyncio
 async def test_feature_options_as_kwargs(nsqd):
     nsq = await open_connection(heartbeat_interval=30001)
     assert nsq._options.features.heartbeat_interval == 30001
     await nsq.close()
 
 
-@pytest.mark.asyncio
 async def test_invalid_kwarg(nsqd):
     with pytest.raises(
         TypeError, match="got an unexpected keyword argument: 'invalid_kwarg'"
@@ -90,7 +82,6 @@ async def test_invalid_kwarg(nsqd):
         await open_connection(invalid_kwarg=1)
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "cmd", (NSQCommands.RDY, NSQCommands.FIN, NSQCommands.TOUCH, NSQCommands.REQ)
 )

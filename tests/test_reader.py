@@ -3,8 +3,6 @@ import pytest
 from ansq import create_reader, open_connection
 from ansq.tcp.reader import Reader
 
-pytestmark = pytest.mark.asyncio
-
 
 @pytest.fixture
 async def nsqd2(tmp_path, create_nsqd):

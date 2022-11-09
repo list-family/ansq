@@ -10,38 +10,32 @@ async def writer(event_loop, nsqd):
     await http_writer.close()
 
 
-@pytest.mark.asyncio
 async def test_ping(writer):
     res = await writer.ping()
     assert res == "OK"
 
 
-@pytest.mark.asyncio
 async def test_info(writer):
     res = await writer.info()
     assert res["tcp_port"] == 4150
     assert res["http_port"] == 4151
 
 
-@pytest.mark.asyncio
 async def test_pub(writer):
     res = await writer.pub("test-topic", "test-message")
     assert res == "OK"
 
 
-@pytest.mark.asyncio
 async def test_mpub(writer):
     res = await writer.mpub("test-topic", "test-message1", "test-message2")
     assert res == "OK"
 
 
-@pytest.mark.asyncio
 async def test_create_topic(writer):
     res = await writer.create_topic("test-create-topic")
     assert res == ""
 
 
-@pytest.mark.asyncio
 async def test_delete_topic(writer):
     topic = "test-delete-topic"
     await writer.create_topic(topic)
@@ -50,7 +44,6 @@ async def test_delete_topic(writer):
     assert res == ""
 
 
-@pytest.mark.asyncio
 async def test_create_channel(writer):
     topic = "test-create-channel-topic"
     await writer.create_topic(topic)
@@ -60,7 +53,6 @@ async def test_create_channel(writer):
     assert res == ""
 
 
-@pytest.mark.asyncio
 async def test_delete_channel(writer):
     topic = "test-delete-channel-topic"
     await writer.create_topic(topic)
@@ -72,7 +64,6 @@ async def test_delete_channel(writer):
     assert res == ""
 
 
-@pytest.mark.asyncio
 async def test_empty_topic(writer):
     topic = "test-empty-topic"
     await writer.create_topic(topic)
@@ -81,7 +72,6 @@ async def test_empty_topic(writer):
     assert res == ""
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize("method_name", ("topic_pause", "topic_unpause"))
 async def test_pausable_topic(writer, method_name):
     topic = "test-pausable-topic"
@@ -92,7 +82,6 @@ async def test_pausable_topic(writer, method_name):
     assert res == ""
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize("method_name", ("pause_channel", "unpause_channel"))
 async def test_pausable_channel(writer, method_name):
     topic = "test-pausable-channel-topic"

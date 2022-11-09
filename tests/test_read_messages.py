@@ -8,7 +8,6 @@ from ansq import ConnectionFeatures, ConnectionOptions, open_connection
 from ansq.tcp.types import NSQMessage
 
 
-@pytest.mark.asyncio
 async def test_read_message(nsqd):
     nsq = await open_connection()
     assert nsq.status.is_connected
@@ -32,7 +31,6 @@ async def test_read_message(nsqd):
     assert nsq.is_closed
 
 
-@pytest.mark.asyncio
 async def test_read_message_and_req(nsqd):
     nsq = await open_connection()
     assert nsq.status.is_connected
@@ -56,7 +54,6 @@ async def test_read_message_and_req(nsqd):
     assert nsq.is_closed
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "process",
     (
@@ -88,7 +85,6 @@ async def test_read_and_process_twice_message(nsqd, process):
     assert nsq.is_closed
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "process",
     (
@@ -123,7 +119,6 @@ async def test_read_and_process_timed_out_message(nsqd, process):
     assert nsq.is_closed
 
 
-@pytest.mark.asyncio
 async def test_read_messages_via_generator(nsqd):
     nsq = await open_connection()
     assert nsq.status.is_connected
@@ -150,7 +145,6 @@ async def test_read_messages_via_generator(nsqd):
     assert nsq.is_closed
 
 
-@pytest.mark.asyncio
 async def test_read_single_message_via_get_message(nsqd):
     nsq = await open_connection()
     assert nsq.status.is_connected
@@ -178,7 +172,6 @@ async def test_read_single_message_via_get_message(nsqd):
     assert nsq.is_closed
 
 
-@pytest.mark.asyncio
 async def test_read_bytes_message(nsqd):
     nsq = await open_connection()
     assert nsq.status.is_connected
@@ -204,7 +197,6 @@ async def test_read_bytes_message(nsqd):
     assert nsq.is_closed
 
 
-@pytest.mark.asyncio
 async def test_timeout_messages(nsqd, caplog):
     nsq = await open_connection(
         connection_options=ConnectionOptions(
@@ -253,7 +245,6 @@ async def test_timeout_messages(nsqd, caplog):
     assert nsq.is_closed
 
 
-@pytest.mark.asyncio
 async def test_read_message_and_touch(nsqd):
     nsq = await open_connection(
         connection_options=ConnectionOptions(
