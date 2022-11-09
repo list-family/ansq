@@ -20,13 +20,14 @@ jobs:
           - "3.8"
           - "3.9"
           - "3.10"
+          - "3.11"
         nsq-version:
           - "nsq-1.1.0.linux-amd64.go1.10.3"
           - "nsq-1.2.0.linux-amd64.go1.12.9"
           - "nsq-1.2.1.linux-amd64.go1.16.6"
         include:
           - os: Ubuntu
-            python-version: "3.11-dev"
+            python-version: "3.12-dev"
             nsq-version: "nsq-1.2.1.linux-amd64.go1.16.6"
     env:
       PY_COLORS: 1
@@ -40,7 +41,7 @@ jobs:
           sudo ln -s ./bin/nsqd /bin/nsqd
           ./bin/nsqd --version
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install test dependencies
@@ -52,7 +53,7 @@ jobs:
           export PATH=bin:$PATH
           tox
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v1.0.13
+        uses: codecov/codecov-action@v3
         with:
           file: ./coverage.xml
           name: ${{ runner.os }}-${{ matrix.python-version }}
