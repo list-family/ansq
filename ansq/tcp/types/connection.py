@@ -245,7 +245,7 @@ class TCPConnection(abc.ABC):
         command: Union[str, bytes],
         *args: Any,
         data: Optional[Any] = None,
-        callback: Callable[[TCPResponse], Any] = None,
+        callback: Optional[Callable[[TCPResponse], Any]] = None,
     ) -> TCPResponse:
         raise NotImplementedError()
 

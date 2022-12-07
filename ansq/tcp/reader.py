@@ -37,7 +37,7 @@ class Reader(Client):
         lookupd_poll_interval: float = 60000,
         lookupd_poll_jitter: float = 0.3,
         connection_options: ConnectionOptions = ConnectionOptions(),
-        loop: AbstractEventLoop = None,
+        loop: Optional[AbstractEventLoop] = None,
     ):
         if nsqd_tcp_addresses is None:
             nsqd_tcp_addresses = []
@@ -171,7 +171,7 @@ class Lookupd:
         http_addresses: Sequence[str],
         poll_interval: float,
         poll_jitter: float,
-        loop: AbstractEventLoop = None,
+        loop: Optional[AbstractEventLoop] = None,
         debug: bool = False,
     ):
         self._reader = reader
