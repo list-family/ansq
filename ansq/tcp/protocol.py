@@ -34,7 +34,7 @@ class BaseReader(metaclass=abc.ABCMeta):
 
 
 class Reader(BaseReader):
-    def __init__(self, buffer: bytes = None):
+    def __init__(self, buffer: Optional[bytes] = None):
         self._buffer = bytearray()
         self._is_header = False
         self._payload_size = 0
