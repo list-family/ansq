@@ -1,7 +1,9 @@
+import asyncio
+
 import pytest
 
 from ansq import ConnectionFeatures, ConnectionOptions, open_connection
-from ansq.tcp.types import NSQCommands
+from ansq.tcp.types import NSQCommands, TCPConnection
 
 
 async def test_connection(nsqd):
@@ -95,3 +97,23 @@ async def test_errors_from_commands_without_responses(nsqd, wait_for, cmd, caplo
     expected_log = f"[E_INVALID] cannot {cmd.decode('utf8')} in current state"
     assert expected_log in caplog.text
     assert response is None
+
+
+async def test_on_heartbeat(nsqd):
+    heartbeats_count = 0
+
+    async def inc_heartbeats_count(conn):
+        nonlocal heartbeats_count
+        heartbeats_count += 1
+        assert isinstance(conn, TCPConnection)
+        assert conn.is_connected
+
+    nsq = await open_connection(
+        connection_options=ConnectionOptions(
+            on_heartbeat=inc_heartbeats_count,
+            features=ConnectionFeatures(heartbeat_interval=1000),
+        ),
+    )
+    await asyncio.sleep(1.1)
+    assert heartbeats_count == 1
+    await nsq.close()
