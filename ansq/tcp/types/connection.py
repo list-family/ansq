@@ -1,6 +1,9 @@
 import abc
 import asyncio
+import functools
 import logging
+import socket
+import sys
 import warnings
 from asyncio.events import AbstractEventLoop
 from asyncio.streams import StreamReader, StreamWriter
@@ -27,8 +30,32 @@ if TYPE_CHECKING:
     from ansq.tcp.types import ConnectionStatus, NSQMessage, NSQMessageSchema
 
 
+@functools.lru_cache(maxsize=None)
+def _get_version() -> str:
+    if sys.version_info >= (3, 8):
+        from importlib import metadata
+    else:
+        import importlib_metadata as metadata
+    return metadata.version("ansq")
+
+
+def _get_hostname() -> str:
+    return socket.gethostname()
+
+
+def _get_short_hostname() -> str:
+    return _get_hostname().split(".")[0]
+
+
+def _get_user_agent() -> str:
+    return f"ansq/{_get_version()}"
+
+
 @attr.define(frozen=True, auto_attribs=True, kw_only=True)
 class ConnectionFeatures:
+    client_id: str = attr.ib(factory=_get_short_hostname)
+    hostname: str = attr.ib(factory=_get_hostname)
+    user_agent: str = attr.ib(factory=_get_user_agent)
     deflate: bool = False
     deflate_level: int = 6
     feature_negotiation: bool = True
