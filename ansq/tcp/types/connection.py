@@ -9,6 +9,7 @@ from datetime import datetime
 from typing import (
     TYPE_CHECKING,
     Any,
+    Awaitable,
     Callable,
     Deque,
     Dict,
@@ -46,6 +47,7 @@ class ConnectionOptions:
     # TODO: define more strict type for `on_exception`
     on_exception: Optional[Callable] = None
     on_close: Optional[Callable[["TCPConnection"], None]] = None
+    on_heartbeat: Optional[Callable[["TCPConnection"], Awaitable[None]]] = None
     loop: Optional[AbstractEventLoop] = None
     auto_reconnect: bool = True
     features: ConnectionFeatures = ConnectionFeatures()
@@ -142,6 +144,7 @@ class TCPConnection(abc.ABC):
         self._on_message = self._options.on_message
         self._on_exception = self._options.on_exception
         self._on_close = self._options.on_close
+        self._on_heartbeat = self._options.on_heartbeat
 
         # Reader setup
         self._topic: Optional[str] = None
@@ -263,6 +266,8 @@ class TCPConnection(abc.ABC):
         from ansq.tcp.types import NSQCommands
 
         await self.execute(NSQCommands.NOP)
+        if self._on_heartbeat is not None:
+            await self._on_heartbeat(self)
 
     @abc.abstractmethod
     async def _upgrade_to_tls(self) -> None:
