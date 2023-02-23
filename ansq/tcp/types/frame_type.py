@@ -8,12 +8,12 @@ class FrameType(Enum):
 
     @property
     def is_response(self) -> bool:
-        return self == self.RESPONSE
+        return self == FrameType.RESPONSE
 
     @property
     def is_error(self) -> bool:
-        return self == self.ERROR
+        return self == FrameType.ERROR
 
     @property
     def is_message(self) -> bool:
-        return self == self.MESSAGE
+        return self == FrameType.MESSAGE
