@@ -23,6 +23,7 @@ from typing import (
 
 import attr
 
+from ansq.closeable_queue import CloseableQueue
 from ansq.typedefs import TCPResponse
 
 if TYPE_CHECKING:
@@ -65,7 +66,7 @@ class ConnectionFeatures:
 
 @attr.define(frozen=True, auto_attribs=True, kw_only=True)
 class ConnectionOptions:
-    message_queue: Optional["asyncio.Queue[Optional[NSQMessage]]"] = None
+    message_queue: Optional["CloseableQueue[Optional[NSQMessage]]"] = None
     # TODO: define more strict type for `on_message`
     on_message: Optional[Callable] = None
     # TODO: define more strict type for `on_exception`
@@ -139,8 +140,8 @@ class TCPConnection(abc.ABC):
             self._debug, f"{self._host}:{self._port}.{self.instance_number}"
         )
 
-        self._message_queue: "asyncio.Queue[Optional[NSQMessage]]" = (
-            self._options.message_queue or asyncio.Queue()
+        self._message_queue: "CloseableQueue[Optional[NSQMessage]]" = (
+            self._options.message_queue or CloseableQueue()
         )
         self._status: ConnectionStatus = ConnectionStatus.INIT
         self._reader: Optional[StreamReader] = None
@@ -200,7 +201,7 @@ class TCPConnection(abc.ABC):
         return self._in_flight
 
     @property
-    def message_queue(self) -> "asyncio.Queue[Optional[NSQMessage]]":
+    def message_queue(self) -> "CloseableQueue[Optional[NSQMessage]]":
         return self._message_queue
 
     @property
