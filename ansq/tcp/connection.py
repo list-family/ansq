@@ -362,7 +362,7 @@ class NSQConnection(NSQConnectionBase):
         """Response reader task."""
         assert self._reader is not None
 
-        exc: Optional[Exception] = None
+        error: Optional[Exception] = None
 
         while not self._reader.at_eof():
             try:
@@ -378,17 +378,17 @@ class NSQConnection(NSQConnectionBase):
                 # should not be closed
                 return
             except Exception as e:
-                exc = e
+                error = e
 
         self.logger.info(
-            "Lost connection to NSQ %s due an error: %s", self.endpoint, exc
+            "Lost connection to NSQ %s due an error: %s", self.endpoint, error
         )
 
         if self._auto_reconnect:
             await asyncio.sleep(1)
             self._reconnect_task = self._loop.create_task(self._do_auto_reconnect())
         else:
-            await self._do_close()
+            await self._do_close(error=error)
 
     async def _parse_data(self) -> bool:
         try:
