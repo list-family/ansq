@@ -1,14 +1,12 @@
+from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
 from enum import Enum
-from sys import version_info
 from typing import Optional
 
 import pytest
 
 from ansq.utils import convert_to_bytes
-
-PY37 = version_info >= (3, 7)
 
 
 class Color(Enum):
@@ -63,51 +61,50 @@ def test_convert_to_bytes(value, expected):
     assert convert_to_bytes(value) == expected
 
 
-if PY37:
-    from dataclasses import dataclass
+@dataclass
+class Point:
+    x: int
+    y: int
+    color: Color = Color.BLUE
+    name: Optional[str] = None
 
-    @dataclass
-    class Point:
-        x: int
-        y: int
-        color: Color = Color.BLUE
-        name: Optional[str] = None
 
-    @dataclass
-    class DataclassWithDictPayload:
-        name: str
-        payload: dict
+@dataclass
+class DataclassWithDictPayload:
+    name: str
+    payload: dict
 
-    @pytest.mark.parametrize(
-        "value, expected",
+
+@pytest.mark.parametrize(
+    "value, expected",
+    (
+        (Point(10, 20), b'{"x":10,"y":20,"color":"BLUE","name":null}'),
         (
-            (Point(10, 20), b'{"x":10,"y":20,"color":"BLUE","name":null}'),
-            (
-                Point(10, 20, Color.RED, "A point"),
-                b'{"x":10,"y":20,"color":"RED","name":"A point"}',
-            ),
-            (
-                DataclassWithDictPayload(
-                    "Some str here",
-                    {
-                        "int": 123,
-                        "float": 123.123,
-                        "str": "str",
-                        "list": [1, 2, 3],
-                        "dict": {"a": 1, "b": 2},
-                        "color": Color.GREEN,
-                        "dataclass": Point(10, 20),
-                    },
-                ),
-                b'{"name":"Some str here","payload":{"int":123,'
-                b'"float":123.123,"str":"str","list":[1,2,3],'
-                b'"dict":{"a":1,"b":2},"color":"GREEN","dataclass":'
-                b'{"x":10,"y":20,"color":"BLUE","name":null}}}',
-            ),
+            Point(10, 20, Color.RED, "A point"),
+            b'{"x":10,"y":20,"color":"RED","name":"A point"}',
         ),
-    )
-    def test_convert_dataclass_to_bytes(value, expected):
-        assert convert_to_bytes(value) == expected
+        (
+            DataclassWithDictPayload(
+                "Some str here",
+                {
+                    "int": 123,
+                    "float": 123.123,
+                    "str": "str",
+                    "list": [1, 2, 3],
+                    "dict": {"a": 1, "b": 2},
+                    "color": Color.GREEN,
+                    "dataclass": Point(10, 20),
+                },
+            ),
+            b'{"name":"Some str here","payload":{"int":123,'
+            b'"float":123.123,"str":"str","list":[1,2,3],'
+            b'"dict":{"a":1,"b":2},"color":"GREEN","dataclass":'
+            b'{"x":10,"y":20,"color":"BLUE","name":null}}}',
+        ),
+    ),
+)
+def test_convert_dataclass_to_bytes(value, expected):
+    assert convert_to_bytes(value) == expected
 
 
 @pytest.mark.parametrize("value", (None, [1, 2, 3], (1, 2), ["str_in_list"]))

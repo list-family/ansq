@@ -1,15 +1,13 @@
 import json
 import logging
 import re
+from dataclasses import asdict, is_dataclass
 from datetime import datetime
 from decimal import Decimal
 from enum import Enum
 from functools import singledispatch
-from sys import version_info
 from typing import Any, Optional, Tuple, Union
 from urllib.parse import urlsplit
-
-PY37 = version_info >= (3, 7)
 
 
 class JSONEncoder(json.JSONEncoder):
@@ -46,11 +44,10 @@ def convert_to_bytes(value: Any) -> bytes:
 
     :raises TypeError:
     """
-    if PY37:
-        from dataclasses import asdict, is_dataclass
 
-        if is_dataclass(value) and not isinstance(value, type):
-            return convert_to_bytes(asdict(value))
+    if is_dataclass(value) and not isinstance(value, type):
+        return convert_to_bytes(asdict(value))
+
     raise TypeError(
         "Argument {} expected to be type of "
         "bytes, bytearray, str, int, float, dict, Decimal, datetime "
@@ -106,11 +103,9 @@ def convert_to_str(value: Any) -> str:
 
     :raises TypeError:
     """
-    if PY37:
-        from dataclasses import asdict, is_dataclass
+    if is_dataclass(value) and not isinstance(value, type):
+        return convert_to_str(asdict(value))
 
-        if is_dataclass(value) and not isinstance(value, type):
-            return convert_to_str(asdict(value))
     raise TypeError(
         "Argument {} expected to be type of "
         "bytes, bytearray, str, int, float, dict, Decimal, datetime "
