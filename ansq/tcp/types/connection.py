@@ -3,7 +3,6 @@ import asyncio
 import functools
 import logging
 import socket
-import sys
 import warnings
 from asyncio.events import AbstractEventLoop
 from asyncio.streams import StreamReader, StreamWriter
@@ -32,10 +31,8 @@ if TYPE_CHECKING:
 
 @functools.lru_cache(maxsize=None)
 def _get_version() -> str:
-    if sys.version_info >= (3, 8):
-        from importlib import metadata
-    else:
-        import importlib_metadata as metadata
+    from importlib import metadata
+
     return metadata.version("ansq")
 
 
