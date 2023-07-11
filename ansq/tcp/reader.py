@@ -22,7 +22,7 @@ from ansq.utils import get_logger
 
 if TYPE_CHECKING:
     from ansq.tcp.connection import NSQConnection
-    from ansq.tcp.types import NSQMessage
+    from ansq.tcp.types import NSQMessage, TCPConnection
 
 
 class Reader(Client):
@@ -302,7 +302,7 @@ class Lookupd:
 
         return addresses
 
-    def _on_close_connection(self, connection: "NSQConnection") -> None:
+    def _on_close_connection(self, connection: "TCPConnection") -> None:
         """A callback to be called after a connection being closed."""
         # Remove the connection from the reader so that lookupd could add it later
         self._reader.remove_connection(connection)

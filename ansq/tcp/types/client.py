@@ -6,6 +6,7 @@ from .connection import ConnectionOptions
 
 if TYPE_CHECKING:
     from ansq.tcp.connection import NSQConnection
+    from ansq.tcp.types import TCPConnection
 
 
 class Client:
@@ -62,7 +63,7 @@ class Client:
         """Add connection to connections pool."""
         self._connections[connection.id] = connection
 
-    def remove_connection(self, connection: "NSQConnection") -> None:
+    def remove_connection(self, connection: "TCPConnection") -> None:
         """Remove connection from connections pool."""
         if connection.id in self._connections:
             del self._connections[connection.id]
