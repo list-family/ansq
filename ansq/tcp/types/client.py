@@ -1,4 +1,6 @@
-from typing import TYPE_CHECKING, Dict, Sequence, Tuple
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Sequence
 
 import attr
 
@@ -25,7 +27,7 @@ class Client:
 
         self.connection_options = connection_options
 
-        self._connections: Dict[str, NSQConnection] = {}
+        self._connections: dict[str, NSQConnection] = {}
 
     async def connect(self) -> None:
         """Connect to nsqd addresses."""
@@ -41,7 +43,7 @@ class Client:
         for connection in self.connections:
             await connection.close()
 
-    async def connect_to_nsqd(self, host: str, port: int) -> "NSQConnection":
+    async def connect_to_nsqd(self, host: str, port: int) -> NSQConnection:
         """Connect and identify to nsqd by given host and port."""
         from ansq.tcp.connection import NSQConnection
 
@@ -59,16 +61,16 @@ class Client:
         self.add_connection(connection)
         return connection
 
-    def add_connection(self, connection: "NSQConnection") -> None:
+    def add_connection(self, connection: NSQConnection) -> None:
         """Add connection to connections pool."""
         self._connections[connection.id] = connection
 
-    def remove_connection(self, connection: "TCPConnection") -> None:
+    def remove_connection(self, connection: TCPConnection) -> None:
         """Remove connection from connections pool."""
         if connection.id in self._connections:
             del self._connections[connection.id]
 
     @property
-    def connections(self) -> Tuple["NSQConnection", ...]:
+    def connections(self) -> tuple[NSQConnection, ...]:
         """Return a tuple of all instantiated connections."""
         return tuple(self._connections.values())

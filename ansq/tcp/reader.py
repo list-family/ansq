@@ -1,18 +1,10 @@
+from __future__ import annotations
+
 import asyncio
 import contextlib
 import random
 from asyncio import AbstractEventLoop
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    AsyncIterator,
-    Dict,
-    List,
-    NamedTuple,
-    NoReturn,
-    Optional,
-    Sequence,
-)
+from typing import TYPE_CHECKING, Any, AsyncIterator, NamedTuple, NoReturn, Sequence
 
 import attr
 
@@ -32,12 +24,12 @@ class Reader(Client):
         self,
         topic: str,
         channel: str,
-        nsqd_tcp_addresses: Optional[Sequence[str]] = None,
-        lookupd_http_addresses: Optional[Sequence[str]] = None,
+        nsqd_tcp_addresses: Sequence[str] | None = None,
+        lookupd_http_addresses: Sequence[str] | None = None,
         lookupd_poll_interval: float = 60000,
         lookupd_poll_jitter: float = 0.3,
         connection_options: ConnectionOptions = ConnectionOptions(),
-        loop: Optional[AbstractEventLoop] = None,
+        loop: AbstractEventLoop | None = None,
     ):
         if nsqd_tcp_addresses is None:
             nsqd_tcp_addresses = []
@@ -53,10 +45,10 @@ class Reader(Client):
         self._topic = topic
         self._channel = channel
         self._loop = loop or asyncio.get_event_loop()
-        self._lookupd: Optional["Lookupd"] = None
+        self._lookupd: Lookupd | None = None
 
         # Common message queue for all connections
-        self._message_queue: "asyncio.Queue[Optional[NSQMessage]]" = asyncio.Queue()
+        self._message_queue: asyncio.Queue[NSQMessage | None] = asyncio.Queue()
         self.connection_options = attr.evolve(
             self.connection_options, message_queue=self._message_queue
         )
@@ -84,7 +76,7 @@ class Reader(Client):
             await self._lookupd.query_lookup()
             await self._lookupd.start_polling()
 
-    async def messages(self) -> AsyncIterator["NSQMessage"]:
+    async def messages(self) -> AsyncIterator[NSQMessage]:
         """Return messages from message queue."""
         while True:
             message = await self.wait_for_message()
@@ -106,7 +98,7 @@ class Reader(Client):
 
             yield message
 
-    async def wait_for_message(self) -> Optional["NSQMessage"]:
+    async def wait_for_message(self) -> NSQMessage | None:
         """Return a message from message queue."""
         return await self.message_queue.get()
 
@@ -121,7 +113,7 @@ class Reader(Client):
         return self._channel
 
     @property
-    def message_queue(self) -> "asyncio.Queue[Optional['NSQMessage']]":
+    def message_queue(self) -> asyncio.Queue[NSQMessage | None]:
         """Return a message queue."""
         return self._message_queue
 
@@ -143,7 +135,7 @@ class Reader(Client):
         """
         raise NotImplementedError("Update max_in_flight not implemented yet")
 
-    async def connect_to_nsqd(self, host: str, port: int) -> "NSQConnection":
+    async def connect_to_nsqd(self, host: str, port: int) -> NSQConnection:
         """Connect, identify and subscribe to nsqd by given host and port."""
         connection = await super().connect_to_nsqd(host=host, port=port)
         if not connection.is_subscribed:
@@ -171,7 +163,7 @@ class Lookupd:
         http_addresses: Sequence[str],
         poll_interval: float,
         poll_jitter: float,
-        loop: Optional[AbstractEventLoop] = None,
+        loop: AbstractEventLoop | None = None,
         debug: bool = False,
     ):
         self._reader = reader
@@ -181,7 +173,7 @@ class Lookupd:
         self._query_lookupd_attempts = 0
         self._logger = get_logger(debug, "lookupd")
         self._debug = debug
-        self._poll_lookup_task: Optional[asyncio.Task] = None
+        self._poll_lookup_task: asyncio.Task | None = None
 
         # Keep original on close callback to call it in `self._on_close_connection`
         self._orig_on_close_callback = self._reader.connection_options.on_close
@@ -260,16 +252,14 @@ class Lookupd:
 
         await self.stop_polling()
 
-    def _get_lookupd_connection(self) -> "NsqLookupd":
+    def _get_lookupd_connection(self) -> NsqLookupd:
         """Return lookupd connection in a round robin fashion way."""
         index = self._query_lookupd_attempts % len(self._lookupd_connections)
         lookupd_connection = self._lookupd_connections[index]
         self._query_lookupd_attempts += 1
         return lookupd_connection
 
-    async def _do_query_lookup(
-        self, lookupd_connection: "NsqLookupd"
-    ) -> List["Address"]:
+    async def _do_query_lookup(self, lookupd_connection: NsqLookupd) -> list[Address]:
         """Query lookup with a given connection and return producer addresses."""
         # Lookup for the reader's topic
         self._logger.debug("Query %s", lookupd_connection)
@@ -281,7 +271,7 @@ class Lookupd:
         return self._get_producer_addresses(lookup_response)
 
     @staticmethod
-    def _get_producer_addresses(response: Dict[str, Any]) -> List["Address"]:
+    def _get_producer_addresses(response: dict[str, Any]) -> list[Address]:
         """Return a list of producers addresses from parsed lookup response."""
         producers = response.get("producers")
         if producers is None:
@@ -290,7 +280,7 @@ class Lookupd:
         if not isinstance(producers, list):
             raise ValueError(f"producers must be a list: {producers}")
 
-        addresses: List[Address] = []
+        addresses: list[Address] = []
 
         for producer in producers:
             if not isinstance(producer, dict):
@@ -302,7 +292,7 @@ class Lookupd:
 
         return addresses
 
-    def _on_close_connection(self, connection: "TCPConnection") -> None:
+    def _on_close_connection(self, connection: TCPConnection) -> None:
         """A callback to be called after a connection being closed."""
         # Remove the connection from the reader so that lookupd could add it later
         self._reader.remove_connection(connection)
@@ -323,8 +313,8 @@ class Address(NamedTuple):
 async def create_reader(
     topic: str,
     channel: str,
-    nsqd_tcp_addresses: Optional[Sequence[str]] = None,
-    lookupd_http_addresses: Optional[Sequence[str]] = None,
+    nsqd_tcp_addresses: Sequence[str] | None = None,
+    lookupd_http_addresses: Sequence[str] | None = None,
     lookupd_poll_interval: float = 60000,
     lookupd_poll_jitter: float = 0.3,
     connection_options: ConnectionOptions = ConnectionOptions(),

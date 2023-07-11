@@ -1,4 +1,4 @@
-from typing import Dict
+from __future__ import annotations
 
 
 class NSQHTTPException(Exception):
@@ -19,7 +19,7 @@ class TransportError(NSQHTTPException):
         return self.args[1]
 
     @property
-    def info(self) -> Dict:
+    def info(self) -> dict:
         """Dict of returned error info from ES, where available."""
         return self.args[2]
 

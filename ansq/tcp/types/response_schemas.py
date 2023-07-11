@@ -1,4 +1,4 @@
-from typing import Union
+from __future__ import annotations
 
 from ...utils import truncate
 from . import FrameType, NSQCommands
@@ -10,7 +10,7 @@ class NSQResponseSchema:
     body: bytes
     frame_type: FrameType
 
-    def __init__(self, body: bytes, frame_type: Union[FrameType, int]) -> None:
+    def __init__(self, body: bytes, frame_type: FrameType | int) -> None:
         self.body = body
         self.frame_type = (
             frame_type if isinstance(frame_type, FrameType) else FrameType(frame_type)
@@ -63,7 +63,7 @@ class NSQMessageSchema(NSQResponseSchema):
         attempts: int,
         id_: bytes,
         body: bytes,
-        frame_type: Union[FrameType, int],
+        frame_type: FrameType | int,
     ) -> None:
         super().__init__(body, frame_type)
         self.timestamp = timestamp
@@ -83,9 +83,7 @@ class NSQErrorSchema(NSQResponseSchema):
 
     code: str
 
-    def __init__(
-        self, code: bytes, body: bytes, frame_type: Union[FrameType, int]
-    ) -> None:
+    def __init__(self, code: bytes, body: bytes, frame_type: FrameType | int) -> None:
         super().__init__(body, frame_type)
         self.code = code.decode("utf-8")
 

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from .lookupd import NsqLookupd
 from .writer import NSQDHTTPWriter
 
