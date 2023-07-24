@@ -79,6 +79,7 @@ async def test_read_from_multiple_tcp_addresses(nsqd, nsqd2):
         channel="bar",
         nsqd_tcp_addresses=[nsqd.tcp_address, nsqd2.tcp_address],
     )
+    await reader.set_max_in_flight(2)
 
     nsq1 = await open_connection(nsqd.host, nsqd.port)
     await nsq1.pub(topic="foo", message="test_message1")
@@ -97,3 +98,61 @@ async def test_read_from_multiple_tcp_addresses(nsqd, nsqd2):
     assert message.body == b"test_message2"
 
     await reader.close()
+
+
+async def test_set_max_in_flight(nsqd):
+    reader = await create_reader(topic="foo", channel="bar")
+
+    await reader.set_max_in_flight(7)
+
+    assert reader.max_in_flight == 7
+
+    await reader.close()
+
+
+@pytest.mark.parametrize(
+    "max_in_flight, expected_rdys",
+    (
+        (0, (0, 0)),
+        (1, (1, 0)),
+        (2, (1, 1)),
+        (3, (1, 2)),
+        (4, (2, 2)),
+        (5, (2, 3)),
+    ),
+)
+async def test_distribute_evenly_max_in_flight(
+    nsqd, nsqd2, max_in_flight, expected_rdys
+):
+    reader = await create_reader(
+        topic="foo",
+        channel="bar",
+        nsqd_tcp_addresses=[nsqd.tcp_address, nsqd2.tcp_address],
+    )
+
+    await reader.set_max_in_flight(max_in_flight)
+    assert get_rdys(reader) == expected_rdys
+
+    await reader.close()
+
+
+async def test_redistribute_max_in_flight_on_close_connection(nsqd, nsqd2, wait_for):
+    reader = await create_reader(
+        topic="foo",
+        channel="bar",
+        nsqd_tcp_addresses=[nsqd.tcp_address, nsqd2.tcp_address],
+    )
+
+    await reader.set_max_in_flight(5)
+    assert get_rdys(reader) == (2, 3)
+
+    await reader.connections[0].close()
+    await wait_for(lambda: get_rdys(reader) == (5,))
+
+    await reader.close()
+
+
+def get_rdys(reader) -> tuple[int, ...]:
+    return tuple(
+        conn.rdy_messages_count for conn in reader.connections if conn.is_connected
+    )
