@@ -364,7 +364,7 @@ class NSQConnection(NSQConnectionBase):
         """Response reader task."""
         assert self._reader is not None
 
-        error: Optional[Exception] = None
+        error: Exception | None = None
 
         while not self._reader.at_eof():
             try:
