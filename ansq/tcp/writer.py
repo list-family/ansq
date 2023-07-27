@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 import random
-from typing import TYPE_CHECKING, Any, Optional, Sequence
+from typing import TYPE_CHECKING, Any, Sequence
 
 from ansq.tcp.connection import NSQConnection
 from ansq.tcp.types import Client, ConnectionOptions
@@ -13,7 +15,7 @@ class Writer(Client):
 
     def __init__(
         self,
-        nsqd_tcp_addresses: Optional[Sequence[str]] = None,
+        nsqd_tcp_addresses: Sequence[str] | None = None,
         connection_options: ConnectionOptions = ConnectionOptions(),
     ):
         super().__init__(
@@ -24,17 +26,17 @@ class Writer(Client):
         if not self._nsqd_tcp_addresses:
             self._nsqd_tcp_addresses = ["localhost:4150"]
 
-    async def pub(self, topic: str, message: Any) -> "TCPResponse":
+    async def pub(self, topic: str, message: Any) -> TCPResponse:
         """Publish a message to a topic to a random connection."""
         conn = self._get_random_open_connection()
         return await conn.pub(topic=topic, message=message)
 
-    async def dpub(self, topic: str, message: Any, delay_time: int) -> "TCPResponse":
+    async def dpub(self, topic: str, message: Any, delay_time: int) -> TCPResponse:
         """Publish a deferred message to a topic to a random connection."""
         conn = self._get_random_open_connection()
         return await conn.dpub(topic=topic, message=message, delay_time=delay_time)
 
-    async def mpub(self, topic: str, *messages: Any) -> "TCPResponse":
+    async def mpub(self, topic: str, *messages: Any) -> TCPResponse:
         """Publish multiple messages to a topic to a random connection."""
         conn = self._get_random_open_connection()
         return await conn.mpub(topic, *messages)
@@ -48,7 +50,7 @@ class Writer(Client):
 
 
 async def create_writer(
-    nsqd_tcp_addresses: Optional[Sequence[str]] = None,
+    nsqd_tcp_addresses: Sequence[str] | None = None,
     connection_options: ConnectionOptions = ConnectionOptions(),
 ) -> Writer:
     """Return created and connected writer."""

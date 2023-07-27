@@ -1,8 +1,10 @@
+from __future__ import annotations
+
 import asyncio
 import json
 import warnings
 from datetime import datetime, timezone
-from typing import Any, AsyncGenerator, Callable, Mapping, Optional, Union
+from typing import Any, AsyncGenerator, Callable, Mapping
 
 import attr
 
@@ -124,7 +126,7 @@ class NSQConnection(NSQConnectionBase):
 
     async def _do_close(
         self,
-        error: Optional[Union[Exception, str]] = None,
+        error: Exception | str | None = None,
         change_status: bool = True,
         silent: bool = False,
     ) -> None:
@@ -196,10 +198,10 @@ class NSQConnection(NSQConnectionBase):
 
     async def execute(
         self,
-        command: Union[str, bytes],
+        command: str | bytes,
         *args: Any,
-        data: Optional[Any] = None,
-        callback: Optional[Callable[[TCPResponse], Any]] = None,
+        data: Any | None = None,
+        callback: Callable[[TCPResponse], Any] | None = None,
     ) -> TCPResponse:
         """Execute command
 
@@ -263,9 +265,9 @@ class NSQConnection(NSQConnectionBase):
 
     async def identify(
         self,
-        config: Optional[Union[dict, str]] = None,
+        config: dict | str | None = None,
         *,
-        features: Optional[ConnectionFeatures] = None,
+        features: ConnectionFeatures | None = None,
         **kwargs: Any,
     ) -> TCPResponse:
         """Executes `IDENTIFY` command.
@@ -362,7 +364,7 @@ class NSQConnection(NSQConnectionBase):
         """Response reader task."""
         assert self._reader is not None
 
-        error: Optional[Exception] = None
+        error: Exception | None = None
 
         while not self._reader.at_eof():
             try:
@@ -461,10 +463,10 @@ class NSQConnection(NSQConnectionBase):
         while is_continue:
             is_continue = await self._parse_data()
 
-    def _start_upgrading(self, resp: Optional[TCPResponse] = None) -> None:
+    def _start_upgrading(self, resp: TCPResponse | None = None) -> None:
         self._is_upgrading = True
 
-    async def _finish_upgrading(self, resp: Optional[TCPResponse] = None) -> None:
+    async def _finish_upgrading(self, resp: TCPResponse | None = None) -> None:
         await self._read_buffer()
         self._is_upgrading = False
 
@@ -522,13 +524,13 @@ class NSQConnection(NSQConnectionBase):
         self.rdy_messages_count = messages_count
         await self.execute(NSQCommands.RDY, messages_count)
 
-    async def fin(self, message_id: Union[str, NSQMessage]) -> None:
+    async def fin(self, message_id: str | NSQMessage) -> None:
         """Finish a message (indicate successful processing)"""
         if isinstance(message_id, NSQMessage):
             await message_id.fin()
         await self.execute(NSQCommands.FIN, message_id)
 
-    async def req(self, message_id: Union[str, NSQMessage], timeout: int = 0) -> None:
+    async def req(self, message_id: str | NSQMessage, timeout: int = 0) -> None:
         """Re-queue a message (indicate failure to process)
 
         The re-queued message is placed at the tail of the queue,
@@ -538,7 +540,7 @@ class NSQConnection(NSQConnectionBase):
             await message_id.req(timeout)
         await self.execute(NSQCommands.REQ, message_id, timeout)
 
-    async def touch(self, message_id: Union[str, NSQMessage]) -> None:
+    async def touch(self, message_id: str | NSQMessage) -> None:
         """Reset the timeout for an in-flight message"""
         if isinstance(message_id, NSQMessage):
             await message_id.touch()
@@ -570,7 +572,7 @@ class NSQConnection(NSQConnectionBase):
                 continue
             yield message
 
-    def get_message(self) -> Optional[NSQMessage]:
+    def get_message(self) -> NSQMessage | None:
         """Shortcut for ``asyncio.Queue.get_nowait()``
         without raising exceptions
         """
@@ -579,7 +581,7 @@ class NSQConnection(NSQConnectionBase):
         except asyncio.QueueEmpty:
             return None
 
-    async def wait_for_message(self) -> Optional[NSQMessage]:
+    async def wait_for_message(self) -> NSQMessage | None:
         """Shortcut for `asyncio.Queue.get()``.
 
         :rtype: :class:`NSQMessage`

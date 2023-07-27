@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 NL = b"\n"
 DATA_SIZE = 4
 FRAME_SIZE = 4

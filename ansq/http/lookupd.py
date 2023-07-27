@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from ansq.typedefs import HTTPResponse
 
 from .base import NSQHTTPConnection

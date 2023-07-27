@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import json
 import logging
 import re
@@ -6,7 +8,7 @@ from datetime import datetime
 from decimal import Decimal
 from enum import Enum
 from functools import singledispatch
-from typing import Any, Optional, Tuple, Union
+from typing import Any
 from urllib.parse import urlsplit
 
 
@@ -18,7 +20,7 @@ class JSONEncoder(json.JSONEncoder):
             return json.JSONEncoder.default(self, obj)
 
 
-def get_host_port(uri: str) -> Tuple[Optional[str], Optional[int]]:
+def get_host_port(uri: str) -> tuple[str | None, int | None]:
     """Get host and port from provided URI."""
     split_uri = urlsplit(uri)
     return split_uri.hostname, split_uri.port
@@ -57,7 +59,7 @@ def convert_to_bytes(value: Any) -> bytes:
 
 @convert_to_bytes.register(bytes)
 @convert_to_bytes.register(bytearray)
-def _(value: Union[bytes, bytearray]) -> bytes:
+def _(value: bytes | bytearray) -> bytes:
     """Convert ``bytes`` or ``bytearray`` to bytes"""
     return value
 
@@ -71,7 +73,7 @@ def _str_to_bytes(value: str) -> bytes:
 @convert_to_bytes.register(int)
 @convert_to_bytes.register(float)
 @convert_to_bytes.register(Decimal)
-def _numbers_to_bytes(value: Union[int, float, Decimal]) -> bytes:
+def _numbers_to_bytes(value: int | float | Decimal) -> bytes:
     """Convert ``int``, ``float`` or ``Decimal`` to bytes"""
     return str(value).encode("utf-8")
 
@@ -134,7 +136,7 @@ def _bytearray_to_str(value: bytearray) -> str:
 @convert_to_str.register(int)
 @convert_to_str.register(float)
 @convert_to_str.register(Decimal)
-def _numbers_to_str(value: Union[int, float, Decimal]) -> str:
+def _numbers_to_str(value: int | float | Decimal) -> str:
     """Convert ``int``, ``float`` or ``Decimal`` to ``str``"""
     return str(value)
 
@@ -157,9 +159,7 @@ def _datetime_to_str(value: datetime) -> str:
     return value.isoformat()
 
 
-def get_logger(
-    debug: bool = False, unique_name: Optional[str] = None
-) -> logging.Logger:
+def get_logger(debug: bool = False, unique_name: str | None = None) -> logging.Logger:
     """Get the ansq logger.
 
     :params debug: Set up debug level.

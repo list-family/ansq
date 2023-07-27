@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import abc
 import asyncio
 import contextlib
@@ -7,7 +9,7 @@ import shutil
 import signal
 import time
 from asyncio.subprocess import Process
-from typing import Awaitable, Callable, List, Optional, Sequence, Type, Union
+from typing import Awaitable, Callable, Sequence
 
 import pytest
 
@@ -17,7 +19,7 @@ from ansq.http import NSQDHTTPWriter, NsqLookupd
 class BaseNSQServer(abc.ABC):
     """Base async nsq server. Required installed NSQ binaries."""
 
-    http_writer_class: Type
+    http_writer_class: type
 
     def __init__(
         self,
@@ -28,7 +30,7 @@ class BaseNSQServer(abc.ABC):
         self.host = host
         self.port = port
         self.http_port = http_port
-        self._process: Optional[Process] = None
+        self._process: Process | None = None
 
         if shutil.which(self.command) is None:
             raise RuntimeError(
@@ -54,7 +56,7 @@ class BaseNSQServer(abc.ABC):
         ...
 
     @property
-    def command_args(self) -> List[str]:
+    def command_args(self) -> list[str]:
         return [
             "-tcp-address",
             self.tcp_address,
@@ -113,8 +115,8 @@ class NSQD(BaseNSQServer):
         port: int = 4150,
         http_port: int = 4151,
         data_path="/tmp",
-        broadcast_address: Optional[str] = None,
-        lookupd_tcp_addresses: Optional[Sequence[str]] = None,
+        broadcast_address: str | None = None,
+        lookupd_tcp_addresses: Sequence[str] | None = None,
     ) -> None:
         super().__init__(
             host=host,
@@ -130,7 +132,7 @@ class NSQD(BaseNSQServer):
         return "nsqd"
 
     @property
-    def command_args(self) -> List[str]:
+    def command_args(self) -> list[str]:
         args = super().command_args + ["-data-path", self.data_path]
 
         if self.lookupd_tcp_addresses:
@@ -208,7 +210,7 @@ def wait_for():
     """Wait for a predicate with a timeout."""
 
     async def inner(
-        predicate: Union[Callable[..., bool], Callable[..., Awaitable[bool]]],
+        predicate: Callable[..., bool] | Callable[..., Awaitable[bool]],
         timeout: float = 5.0,
         sleep_time: float = 0.1,
     ):

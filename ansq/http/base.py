@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 import asyncio
 import json
-from typing import TYPE_CHECKING, Any, Optional, Type, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar
 
 import aiohttp
 
@@ -24,7 +26,7 @@ class NSQHTTPConnection:
         host: str = "127.0.0.1",
         port: int = 4151,
         *,
-        loop: Optional["AbstractEventLoop"] = None,
+        loop: AbstractEventLoop | None = None,
     ) -> None:
         self._loop = loop or asyncio.get_event_loop()
         self._endpoint = (host, port)
@@ -34,9 +36,9 @@ class NSQHTTPConnection:
 
     @classmethod
     def from_address(
-        cls: Type[_T],
+        cls: type[_T],
         address: str,
-        loop: Optional["AbstractEventLoop"] = None,
+        loop: AbstractEventLoop | None = None,
     ) -> _T:
         try:
             host, port_str = address.split(":")

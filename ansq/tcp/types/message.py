@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from datetime import datetime, timedelta, timezone
 from functools import wraps
 from typing import TYPE_CHECKING, Any, Callable
@@ -19,7 +21,7 @@ def ensure_can_be_processed(func: Callable) -> Callable:
     """
 
     @wraps(func)
-    async def wrapper(message: "NSQMessage", *args: Any, **kwargs: Any) -> Any:
+    async def wrapper(message: NSQMessage, *args: Any, **kwargs: Any) -> Any:
         if message.is_processed:
             raise RuntimeWarning(f"Message id={message.id} has already been processed")
         if message.is_timed_out:
@@ -32,8 +34,8 @@ def ensure_can_be_processed(func: Callable) -> Callable:
 class NSQMessage:
     def __init__(
         self,
-        message_schema: "NSQMessageSchema",
-        connection: "NSQConnection",
+        message_schema: NSQMessageSchema,
+        connection: NSQConnection,
     ) -> None:
         self.timestamp = message_schema.timestamp
         self.attempts = message_schema.attempts

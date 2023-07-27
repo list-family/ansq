@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import pytest
 
 from ansq import create_reader, open_connection

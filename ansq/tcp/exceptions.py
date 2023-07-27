@@ -1,4 +1,4 @@
-from typing import Union
+from __future__ import annotations
 
 
 class ConnectionClosedError(Exception):
@@ -132,5 +132,5 @@ ERROR_CODES = {
 # E_FIN_FAILED
 
 
-def get_exception(code: str, error_message: Union[str, bytes]) -> NSQException:
+def get_exception(code: str, error_message: str | bytes) -> NSQException:
     return ERROR_CODES.get(code, NSQErrorCode)(f"{code}: {error_message!r}")

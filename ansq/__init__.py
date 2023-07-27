@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from .tcp.connection import ConnectionFeatures, ConnectionOptions, open_connection
 from .tcp.reader import create_reader
 from .tcp.writer import create_writer

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from .client import Client
 from .commands import NSQCommands
 from .connection import ConnectionFeatures, ConnectionOptions, TCPConnection

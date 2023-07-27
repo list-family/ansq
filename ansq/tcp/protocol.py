@@ -2,9 +2,11 @@
 
 :see: https://nsq.io/clients/tcp_protocol_spec.html
 """
+from __future__ import annotations
+
 import abc
 import struct
-from typing import Any, Optional, Tuple, Union
+from typing import Any
 
 from ansq.tcp import consts
 from ansq.tcp.exceptions import ProtocolError
@@ -29,12 +31,12 @@ class BaseReader(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod  # pragma: no cover
-    def encode_command(self, cmd: str, *args: Any, data: Optional[Any] = None) -> bytes:
+    def encode_command(self, cmd: str, *args: Any, data: Any | None = None) -> bytes:
         pass
 
 
 class Reader(BaseReader):
-    def __init__(self, buffer: Optional[bytes] = None):
+    def __init__(self, buffer: bytes | None = None):
         self._buffer = bytearray()
         self._is_header = False
         self._payload_size = 0
@@ -57,7 +59,7 @@ class Reader(BaseReader):
 
     def get(
         self,
-    ) -> Optional[Union[NSQResponseSchema, NSQErrorSchema, NSQMessageSchema]]:
+    ) -> NSQResponseSchema | NSQErrorSchema | NSQMessageSchema | None:
         """Get from buffer NSQ response
 
         :raises ProtocolError: On unexpected NSQ message's FrameType
@@ -86,7 +88,7 @@ class Reader(BaseReader):
 
     def _parse_payload(
         self, frame_type: FrameType, payload_size: int
-    ) -> Union[NSQResponseSchema, NSQErrorSchema, NSQMessageSchema]:
+    ) -> NSQResponseSchema | NSQErrorSchema | NSQMessageSchema:
         """Parse from buffer NSQ response
 
         :raises ProtocolError: On unexpected NSQ message's FrameType
@@ -114,13 +116,13 @@ class Reader(BaseReader):
         end = consts.DATA_SIZE + payload_size
         return bytes(self._buffer[start:end])
 
-    def _unpack_error(self, payload_size: int) -> Tuple[bytes, bytes]:
+    def _unpack_error(self, payload_size: int) -> tuple[bytes, bytes]:
         """Unpack the error from the buffer"""
         error = self._unpack_response(payload_size)
         code, msg = error.split(maxsplit=1)
         return code, msg
 
-    def _unpack_message(self, payload_size: int) -> Tuple[int, int, bytes, bytes]:
+    def _unpack_message(self, payload_size: int) -> tuple[int, int, bytes, bytes]:
         """Unpack the message from the buffer.
 
         :see: https://docs.python.org/3/library/struct.html
@@ -135,9 +137,7 @@ class Reader(BaseReader):
         timestamp, attempts, id_, body = struct.unpack(fmt, self._buffer[start:end])
         return timestamp, attempts, id_, body
 
-    def encode_command(
-        self, cmd: Union[str, bytes], *args: Any, data: Any = None
-    ) -> bytes:
+    def encode_command(self, cmd: str | bytes, *args: Any, data: Any = None) -> bytes:
         """Encode command to bytes"""
         _cmd = convert_to_bytes(cmd.upper().strip())
         _args = [convert_to_bytes(a) for a in args]

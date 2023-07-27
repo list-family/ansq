@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import abc
 import asyncio
 import functools
@@ -8,18 +10,7 @@ from asyncio.events import AbstractEventLoop
 from asyncio.streams import StreamReader, StreamWriter
 from collections import deque
 from datetime import datetime
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Awaitable,
-    Callable,
-    Deque,
-    Dict,
-    Mapping,
-    Optional,
-    Tuple,
-    Union,
-)
+from typing import TYPE_CHECKING, Any, Awaitable, Callable, Deque, Mapping
 
 import attr
 
@@ -65,26 +56,26 @@ class ConnectionFeatures:
 
 @attr.define(frozen=True, auto_attribs=True, kw_only=True)
 class ConnectionOptions:
-    message_queue: Optional["asyncio.Queue[Optional[NSQMessage]]"] = None
+    message_queue: asyncio.Queue[NSQMessage | None] | None = None
     # TODO: define more strict type for `on_message`
-    on_message: Optional[Callable] = None
+    on_message: Callable | None = None
     # TODO: define more strict type for `on_exception`
-    on_exception: Optional[Callable] = None
-    on_close: Optional[Callable[["TCPConnection"], None]] = None
-    on_heartbeat: Optional[Callable[["TCPConnection"], Awaitable[None]]] = None
-    loop: Optional[AbstractEventLoop] = None
+    on_exception: Callable | None = None
+    on_close: Callable[[TCPConnection], None] | None = None
+    on_heartbeat: Callable[[TCPConnection], Awaitable[None]] | None = None
+    loop: AbstractEventLoop | None = None
     auto_reconnect: bool = True
     features: ConnectionFeatures = ConnectionFeatures()
     debug: bool = False
-    logger: Optional[logging.Logger] = None
+    logger: logging.Logger | None = None
 
-    def _evolve(self, **kwargs: Any) -> "ConnectionOptions":
+    def _evolve(self, **kwargs: Any) -> ConnectionOptions:
         option_names = set(attr.fields_dict(type(self)))
         option_names.discard("features")
         feature_names = set(attr.fields_dict(type(self.features)))
 
-        options: Dict[str, Any] = {}
-        features: Dict[str, Any] = {}
+        options: dict[str, Any] = {}
+        features: dict[str, Any] = {}
 
         for param, value in kwargs.items():
             if param in option_names:
@@ -139,28 +130,28 @@ class TCPConnection(abc.ABC):
             self._debug, f"{self._host}:{self._port}.{self.instance_number}"
         )
 
-        self._message_queue: "asyncio.Queue[Optional[NSQMessage]]" = (
+        self._message_queue: asyncio.Queue[NSQMessage | None] = (
             self._options.message_queue or asyncio.Queue()
         )
         self._status: ConnectionStatus = ConnectionStatus.INIT
-        self._reader: Optional[StreamReader] = None
-        self._writer: Optional[StreamWriter] = None
-        self._reader_task: Optional[asyncio.Task] = None
-        self._reconnect_task: Optional[asyncio.Task] = None
+        self._reader: StreamReader | None = None
+        self._writer: StreamWriter | None = None
+        self._reader_task: asyncio.Task | None = None
+        self._reconnect_task: asyncio.Task | None = None
         self._auto_reconnect = self._options.auto_reconnect
 
         self._parser = Reader()
 
-        self._last_message_time: Optional[datetime] = None
+        self._last_message_time: datetime | None = None
         # Next queue is used for nsq commands
         self._cmd_waiters: Deque[
-            Tuple[asyncio.Future, Optional[Callable[[TCPResponse], Any]]]
+            tuple[asyncio.Future, Callable[[TCPResponse], Any] | None]
         ] = deque()
         # Mark connection in upgrading state to ssl socket
         self._is_upgrading = False
         # Number of received but not acknowledged or req messages
         self._in_flight = 0
-        self._secret: Optional[str] = None
+        self._secret: str | None = None
         self._is_auth_required = False
         self._is_authorized = False
 
@@ -171,8 +162,8 @@ class TCPConnection(abc.ABC):
         self._on_heartbeat = self._options.on_heartbeat
 
         # Reader setup
-        self._topic: Optional[str] = None
-        self._channel: Optional[str] = None
+        self._topic: str | None = None
+        self._channel: str | None = None
         self.rdy_messages_count: int = 1
         self._is_subscribed = False
 
@@ -188,7 +179,7 @@ class TCPConnection(abc.ABC):
         return f"{self._host}:{self._port}"
 
     @property
-    def status(self) -> "ConnectionStatus":
+    def status(self) -> ConnectionStatus:
         return self._status
 
     @property
@@ -200,11 +191,11 @@ class TCPConnection(abc.ABC):
         return self._in_flight
 
     @property
-    def message_queue(self) -> "asyncio.Queue[Optional[NSQMessage]]":
+    def message_queue(self) -> asyncio.Queue[NSQMessage | None]:
         return self._message_queue
 
     @property
-    def last_message(self) -> Optional[datetime]:
+    def last_message(self) -> datetime | None:
         return self._last_message_time
 
     @property
@@ -212,11 +203,11 @@ class TCPConnection(abc.ABC):
         return self._is_subscribed
 
     @property
-    def subscribed_topic(self) -> Optional[str]:
+    def subscribed_topic(self) -> str | None:
         return self._topic
 
     @property
-    def subscribed_channel(self) -> Optional[str]:
+    def subscribed_channel(self) -> str | None:
         return self._channel
 
     @property
@@ -260,7 +251,7 @@ class TCPConnection(abc.ABC):
     @abc.abstractmethod
     async def _do_close(
         self,
-        exception: Optional[Exception] = None,
+        exception: Exception | None = None,
         change_status: bool = True,
         silent: bool = False,
     ) -> None:
@@ -269,19 +260,19 @@ class TCPConnection(abc.ABC):
     @abc.abstractmethod
     async def execute(
         self,
-        command: Union[str, bytes],
+        command: str | bytes,
         *args: Any,
-        data: Optional[Any] = None,
-        callback: Optional[Callable[[TCPResponse], Any]] = None,
+        data: Any | None = None,
+        callback: Callable[[TCPResponse], Any] | None = None,
     ) -> TCPResponse:
         raise NotImplementedError()
 
     @abc.abstractmethod
     async def identify(
         self,
-        config: Optional[Union[dict, str]] = None,
+        config: dict | str | None = None,
         *,
-        features: Optional[ConnectionFeatures] = None,
+        features: ConnectionFeatures | None = None,
         **kwargs: Any,
     ) -> TCPResponse:
         raise NotImplementedError()
@@ -314,7 +305,7 @@ class TCPConnection(abc.ABC):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    async def _on_message_hook(self, response: "NSQMessageSchema") -> None:
+    async def _on_message_hook(self, response: NSQMessageSchema) -> None:
         raise NotImplementedError()
 
     @abc.abstractmethod
@@ -322,9 +313,9 @@ class TCPConnection(abc.ABC):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def _start_upgrading(self, resp: Optional[TCPResponse] = None) -> None:
+    def _start_upgrading(self, resp: TCPResponse | None = None) -> None:
         raise NotImplementedError()
 
     @abc.abstractmethod
-    async def _finish_upgrading(self, resp: Optional[TCPResponse] = None) -> None:
+    async def _finish_upgrading(self, resp: TCPResponse | None = None) -> None:
         raise NotImplementedError()

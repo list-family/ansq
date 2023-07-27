@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 class NSQCommands:
     MAGIC_V2 = b"  V2"
     OK = b"OK"
