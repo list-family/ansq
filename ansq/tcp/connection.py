@@ -45,8 +45,15 @@ class NSQConnection(NSQConnectionBase):
         self.logger.debug(f"Connect to {self.endpoint} established")
 
         self._reader_task = self._loop.create_task(self._read_data_task())
+        self._reader_task.add_done_callback(self._reader_task_callback)
 
         return True
+
+    def _reader_task_callback(self, task: asyncio.Task) -> None:
+        exc = task.exception()
+
+        if exc is not None:
+            self._message_queue.close(exc=exc)
 
     async def reconnect(self, raise_error: bool = True) -> bool:
         """Reconnect method will reopen the connection,
@@ -571,7 +578,7 @@ class NSQConnection(NSQConnectionBase):
             yield message
 
     def get_message(self) -> Optional[NSQMessage]:
-        """Shortcut for ``asyncio.Queue.get_nowait()``
+        """Shortcut for ``CloseableQueue.get_nowait()``
         without raising exceptions
         """
         try:
@@ -580,7 +587,7 @@ class NSQConnection(NSQConnectionBase):
             return None
 
     async def wait_for_message(self) -> Optional[NSQMessage]:
-        """Shortcut for `asyncio.Queue.get()``.
+        """Shortcut for `CloseableQueue.get()``.
 
         :rtype: :class:`NSQMessage`
         :returns: :class:`NSQMessage`.

@@ -16,6 +16,7 @@ from typing import (
 
 import attr
 
+from ansq.closeable_queue import CloseableQueue
 from ansq.http import NsqLookupd
 from ansq.tcp.types import Client, ConnectionOptions
 from ansq.utils import get_logger
@@ -56,7 +57,7 @@ class Reader(Client):
         self._lookupd: Optional["Lookupd"] = None
 
         # Common message queue for all connections
-        self._message_queue: "asyncio.Queue[Optional[NSQMessage]]" = asyncio.Queue()
+        self._message_queue: "CloseableQueue[Optional[NSQMessage]]" = CloseableQueue()
         self.connection_options = attr.evolve(
             self.connection_options, message_queue=self._message_queue
         )
@@ -121,7 +122,7 @@ class Reader(Client):
         return self._channel
 
     @property
-    def message_queue(self) -> "asyncio.Queue[Optional['NSQMessage']]":
+    def message_queue(self) -> "CloseableQueue[Optional['NSQMessage']]":
         """Return a message queue."""
         return self._message_queue
 
