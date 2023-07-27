@@ -362,28 +362,33 @@ class NSQConnection(NSQConnectionBase):
         """Response reader task."""
         assert self._reader is not None
 
+        error: Optional[Exception] = None
+
         while not self._reader.at_eof():
             try:
                 data = await self._reader.read(consts.MAX_CHUNK_SIZE)
+
+                self._parser.feed(data)
+
+                if not self._is_upgrading:
+                    await self._read_buffer()
+
             except asyncio.CancelledError:
                 # useful during update to TLS, task canceled but connection
                 # should not be closed
                 return
-            except Exception as exc:
-                await self._do_close(exc)
-                return
+            except Exception as e:
+                error = e
 
-            self._parser.feed(data)
+        self.logger.info(
+            "Lost connection to NSQ %s due an error: %s", self.endpoint, error
+        )
 
-            if not self._is_upgrading:
-                await self._read_buffer()
-
-        self.logger.info("Lost connection to NSQ %s", self.endpoint)
         if self._auto_reconnect:
             await asyncio.sleep(1)
             self._reconnect_task = self._loop.create_task(self._do_auto_reconnect())
         else:
-            await self._do_close()
+            await self._do_close(error=error)
 
     async def _parse_data(self) -> bool:
         try:
