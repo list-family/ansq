@@ -52,8 +52,7 @@ class BaseNSQServer(abc.ABC):
 
     @property
     @abc.abstractmethod
-    def command(self) -> str:
-        ...
+    def command(self) -> str: ...
 
     @property
     def command_args(self) -> list[str]:
