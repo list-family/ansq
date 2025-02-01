@@ -86,7 +86,7 @@ class NSQConnection(NSQConnectionBase):
             await self._do_close(e)
             return False
 
-        self.logger.debug(f"Reconnected to {self.endpoint}")
+        self.logger.info(f"Reconnected to {self.endpoint}")
         self._status = ConnectionStatus.CONNECTED
         return True
 
