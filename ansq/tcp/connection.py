@@ -559,7 +559,7 @@ class NSQConnection(NSQConnectionBase):
 
         await self.rdy(messages_count)
 
-    async def messages(self) -> AsyncGenerator[NSQMessage, None]:
+    async def messages(self) -> AsyncGenerator[NSQMessage]:
         """Generator, yields messages"""
         assert self.is_subscribed, "You should subscribe to the topic first"
 
